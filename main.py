@@ -3,6 +3,18 @@ from prettytable import PrettyTable
 
 if __name__ == "__main__":
 
+    # TODO: Parse equation input
+
+    # TODO: Create intruction object for handling order? (Simulate scoreboard)
+
+    # TODO: Organize/sort instructions
+
+    # TODO: Run instructions and generate timing output
+
+    # TODO: Put timing output in pretty table
+
+
+    # Example of Python table output we need to generate for the project.
     x = PrettyTable()
     x.field_names = ["City name", "Area", "Population", "Annual Rainfall"]
     x.add_row(["Adelaide",1295, 1158259, 600.5])
