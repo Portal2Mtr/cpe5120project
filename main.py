@@ -7,6 +7,7 @@ if __name__ == "__main__":
 
     ########### Get input and parse instuctions
     # TODO: Parse equation input
+    print("Parsing input and setting up system...")
     testInput = "Y = A + B" # Start small
     # testINput = "BX + C"
     # testInput = "AX^2 + BX + C"
@@ -23,6 +24,7 @@ if __name__ == "__main__":
     operators = specials
 
     ############# Organize instructions
+    print("Setting up instructions...")
     instrList = []
     cdc6600 = CDC6600System
 
@@ -41,14 +43,15 @@ if __name__ == "__main__":
     # TODO: Created object for handling system timing (e.g. waiting for func units to be availible, etc.), needs to be filled out
 
     # TODO: Run instructions and generate timing output
-
-    for instr in instrList:
+    print("Computing instructions...")
+    for idx,instr in enumerate(instrList):
         instr.compute()
+        print('Processed instr. (' + str((idx+1)) + '/' + str(len(instrList)) + ")")
 
     # TODO: Put timing output in pretty table
-
     # Example of Python table output we need to generate for the project.
     # TODO: Create output table that matches for CDC 6600/7600
+    print("Creating table...")
     x = PrettyTable()
     x.field_names = ["City name", "Area", "Population", "Annual Rainfall"]
     x.add_row(["Adelaide",1295, 1158259, 600.5])
