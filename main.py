@@ -1,20 +1,54 @@
 from prettytable import PrettyTable
 
+from cdc6600instr import CDC6600Instr,CDC6600System
+from cdc7600instr import CDC7600Instr
 
 if __name__ == "__main__":
 
+    ########### Get input and parse instuctions
     # TODO: Parse equation input
+    testInput = "Y = A + B" # Start small
+    # testINput = "BX + C"
+    # testInput = "AX^2 + BX + C"
 
-    # TODO: Create intruction object for handling order? (Simulate scoreboard)
+    brokenInput = testInput.split(' ')
 
-    # TODO: Organize/sort instructions
+    # Organize/sort instructions
+    outputVar = brokenInput[0]
+    sepIdx = brokenInput.index("=")
+    inputs = brokenInput[(sepIdx+1):]
+    inputVars = [c for c in inputs if c.isalpha()]
+    specials = [c for c in inputs if not c.isalpha()]
+    # TODO Assumed all nonalphabet characters are operators, look for squares, separate coefficients from linear vars
+    operators = specials
+
+    ############# Organize instructions
+    instrList = []
+    cdc6600 = CDC6600System
+
+    # Add fetch objs first
+    for entry in inputVars:
+        newFetch = CDC6600Instr(entry,"FETCH",cdc6600)
+        instrList.append(newFetch)
+
+
+    # TODO More complicated commands, (sort based on availibility?)
+
+    # Add storing instructions
+    instrList.append(CDC6600Instr(outputVar,"STORE",cdc6600))
+
+
+    # TODO: Created object for handling system timing (e.g. waiting for func units to be availible, etc.), needs to be filled out
 
     # TODO: Run instructions and generate timing output
 
+    for instr in instrList:
+        instr.compute()
+
     # TODO: Put timing output in pretty table
 
-
     # Example of Python table output we need to generate for the project.
+    # TODO: Create output table that matches for CDC 6600/7600
     x = PrettyTable()
     x.field_names = ["City name", "Area", "Population", "Annual Rainfall"]
     x.add_row(["Adelaide",1295, 1158259, 600.5])
