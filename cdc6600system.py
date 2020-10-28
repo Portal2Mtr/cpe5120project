@@ -6,13 +6,18 @@ class CDC6600System():
     def __init__(self):
         numAddr = 8
         numOp = 8
+        numMem = 8
         self.addrRegs = {}
         self.opRegs = {}
+        self.memRegs ={}
         for i in range(numAddr):
             self.addrRegs["A" + str(i)] = None
 
         for i in range(numOp):
             self.opRegs["X" + str(i)] = None
+
+        for i in range(numMem):
+            self.memRegs["K" + str(i)] = None
 
         # Define 6600 wait and Func. Unit Calc times
         self.wordSize = 4 # Bytes
@@ -47,6 +52,7 @@ class CDC6600System():
             "BRANCH": 0
         }
         self.instrList = []
+        self.opMRU = None # Set most recently used op address for calculations
 
         # Setup simulation vars TODO
         self.currTime = 0
@@ -63,10 +69,19 @@ class CDC6600System():
     def setAddrByIdx(self,register,idx):
         self.addrRegs[register] = idx
 
+    def setMemByIdx(self,register,idx):
+        self.memRegs[register] = idx
+
     def getEmptyOp(self):
         for i in self.opRegs.keys():
             if self.opRegs[i] is None:
                 return i
+
+    def getEmptyMem(self):
+        for i in self.memRegs.keys():
+            if i != "K0":
+                if self.memRegs[i] is None:
+                    return i
 
     def checkBusy(self,funcUnit):
         waitVal = self.busyUntil[funcUnit]
@@ -101,7 +116,7 @@ class CDC6600System():
         # TODO More complicated commands, (sort based on availibility?)
         # Add operation instructions
         for entry in operators:
-            newOp = CDC6600Instr("", "", system=system, operator=entry)
+            newOp = CDC6600Instr(entry, "", system=system, operator=entry)
             instrList.append(newOp)
 
         # Add storing instructions, only have one
@@ -148,21 +163,49 @@ class CDC6600System():
 
 
     def eqnAndRegisters(self,instr):
+        #TODO Move equation generation to parseandStore to check for conflicts?
 
         memCats = ["FETCH","STORE"]
 
         # Initialize output address as the lowest index that is empty
         if instr.category in memCats:
-            memAddr = self.getEmptyAddr()
-            memAddrIdx = int(memAddr[-1])
-            instr.outputAddrIdx = memAddrIdx
-            instr.instrRegs['result'] = memAddr
-            instr.instrRegs['leftOp'] = memAddr
-            self.setAddrByIdx(memAddr,self.instrList.index(instr))
+            if instr.category == "FETCH":
+                emptyMemIdx = self.getEmptyMem()
+                memAddr = "A" + emptyMemIdx[-1]
+                memAddrIdx = int(memAddr[-1])
+                instr.outputAddrIdx = memAddrIdx
+                instr.instrRegs['result'] = memAddr
+                instr.instrRegs['leftOp'] = memAddr
+                self.setMemByIdx(emptyMemIdx, self.instrList.index(instr))
+                self.setAddrByIdx(memAddr, self.instrList.index(instr))
+            else:
+                memAddr = self.getEmptyAddr()
+                memAddrIdx = int(memAddr[-1])
+                instr.outputAddrIdx = memAddrIdx
+                instr.instrRegs['result'] = memAddr
+                instr.instrRegs['leftOp'] = memAddr
+                self.setAddrByIdx(memAddr, self.instrList.index(instr))
+
+
+
         else:
-            opAddr = self.getEmptyOp()
-            opAddrIdx = int(opAddr[-1])
-            instr.outputAddrIdx = opAddrIdx
+            # For operations, switch between x0 and x6 for output
+            if (self.opMRU == None) or (self.opMRU == 6):
+                self.opMRU = 0
+                opAddr = 'X0'
+                opAddrIdx = int(opAddr[-1])
+                instr.outputAddrIdx = opAddrIdx
+                instr.instrRegs['result'] = opAddr
+                self.opRegs['X0'] = self.instrList.index(instr)
+
+            else:
+                self.opMRU = 6
+                opAddr = 'X6'
+                opAddrIdx = int(opAddr[-1])
+                instr.outputAddrIdx = opAddrIdx
+                instr.instrRegs['result'] = opAddr
+                self.opRegs['X6'] = self.instrList.index(instr)
+
 
         # Setup FETCH Idxs (simplest)
         if instr.category == "FETCH":
@@ -170,22 +213,39 @@ class CDC6600System():
             instr.instrRegs['rightOp'] = "K" + str(currIdx)
             instr.instrRegs['operand'] = "+"
             instr.genEqn()
+            return
 
-        # TODO after instructions for nonmem operators
-        # if instr.category == "STORE":
-        #     currIdx = instr.outputAddrIdx
-        #     instr.instrRegs['rightOp'] = "K" + str(currIdx)
-        #     instr.instrRegs['operand'] = "+"
-        #     instr.genEqn()
+        # TODO after instructions for nonmem operators, set as A6 or A7 (from wikipedia), A7 if A6 used
+        if instr.category == "STORE":
+            # Get most recently used operator and its output
+            recentOpIdx = self.opRegs['X' + str(self.opMRU)]
+            opResult = self.instrList[recentOpIdx].instrRegs['result']
+            emptyMem = self.getEmptyMem()
+            instr.instrRegs['rightOp'] = emptyMem
+            instr.instrRegs['leftOp'] = opResult
+            instr.instrRegs['operand'] = "+"
+            self.memRegs[emptyMem] = self.instrList.index(instr)
+            instr.genEqn()
+            return
 
-        # TODO Generate equations and desc for nonmemory instrs
+        instr.instrRegs['leftOp'] = self.instrList[instr.leftOpIdx].instrRegs['result']
+        instr.instrRegs['rightOp'] = self.instrList[instr.rightOpIdx].instrRegs['result']
+        instr.instrRegs['operand'] = instr.operator
+        instr.genEqn()
+
 
     def createDesc(self,instr):
 
-        if instr.category is "FETCH":
+        if (instr.category == "FETCH"):
             instr.catDesc = "Fetch"
+            instr.instrDesc = instr.catDesc + " " + instr.varName
+        elif instr.category == "STORE":
+            instr.catDesc = "Store"
+            instr.instrDesc = instr.catDesc + " " + instr.varName
+        else:
+            instr.catDesc = instr.category
+            instr.instrDesc = instr.catDesc + " " + instr.instrRegs['leftOp'] + " "+ instr.instrRegs['rightOp']
 
-        instr.instrDesc = instr.catDesc + " " + instr.varName
 
 
     def compute(self, instr):
