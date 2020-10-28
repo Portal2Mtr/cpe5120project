@@ -1,53 +1,68 @@
-
 # Class for handling instruction computation for the simulated CDC6600 sytem
+
 class CDC6600Instr():
 
-    def __init__(self,varName,category,system,operator=None):
-
+    def __init__(self, varName, category, system, operator=None):
         # Category types:
+        # *Insert functional units here*
         # "FETCH": Load var from core memory
-        # "SET":
-        # "COMPUTE": Compute operation on other instructions
         # "STORE": Store result in core memory
         self.varName = varName
         self.operator = operator
+        self.operand = ""
         self.result = None
         self.system = system
         self.category = category
+        self.currWord = ""
+        self.equation = "TEMP"
+        self.instDesc = "TEMP"
 
-        # Define 6600 wait and Func. Unit Calc times
-        self.shortWait = 1
-        self.longWait = 2
-        self.wordWait = 8
-
-        # Define Func Unit based on category
+        # Define category based on func unit of operator
         # TODO
+        if self.operator is not None:
+            self.category = system.getFuncFromOp(self.operator)
 
-        # TODO Determine instruction type (long/short) based on category
-        self.instrtype = "TEMP"
+        # All nonfunctional unit instructions are long, all functioinal units are short
+        longCats = ["FETCH","STORE"]
+        if self.category in longCats:
+            self.instrtype = "LONG"
+        else:
+            self.instrtype = "SHORT"
 
         self.timeDict = {
-            "issueTime" : 0,
-            "startTime" : 0,
+            "issueTime": 0,
+            "startTime": 0,
             "resultTime": 0,
             "unitReadyTime": 0,
             "fetchTime": 0,
-            "storeTime":0
+            "storeTime": 0
         }
 
-    def compute(self):
-        # TODO compute output times based on instruction category
-        print("Change me!")
+        self.instrRegs = {
+            "leftOp": "",
+            "operand":"",
+            "rightOp": "",
+            "result": ""
+        }
 
-    # Return array of times in string format for this instruction
-    def outputTimes(self):
+    def getDesc(self):
         outputArray = []
-        for key,value in self.timeDict.items():
+        outputArray.append(self.currWord)
+        outputArray.append(self.equation)
+        outputArray.append(self.instDesc)
+        outputArray.append(self.instrtype)
+        for key, value in self.timeDict.items():
             outputArray.append(str(value))
 
         return outputArray
 
-# Class for handling keeping track of each component's timing in the CDC 6600 system
-class CDC6600System():
-    def __init__(self):
-        print("Temp")
+    def genEqn(self):
+        self.equation = self.instrRegs.result+"=" + self.instrRegs.operand + \
+                        self.instrRegs.leftOp + self.instrRegs.rightOp
+
+    def getVar(self):
+        return self.varName
+
+    def assignOpVarIdx(self,leftIdx,rightIdx):
+        self.leftOpIdx = leftIdx
+        self.rightOpIdx = rightIdx
