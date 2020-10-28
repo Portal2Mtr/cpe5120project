@@ -246,14 +246,18 @@ class CDC6600System():
             instr.catDesc = instr.category
             instr.instrDesc = instr.catDesc + " " + instr.instrRegs['leftOp'] + " "+ instr.instrRegs['rightOp']
 
-
+    def generateTimes(self,instr):
+        # TODO compute output times based on instruction category
+        # TODO Main simulation loop will go here!
+        temp = 0
 
     def compute(self, instr):
 
         # Generate instruction equation and description
-        self.eqnAndRegisters(instr)
+        self.eqnAndRegisters(instr) # TODO may move to parseandstore and check for conflicts
         self.createDesc(instr)
+        self.generateTimes(instr)
 
-        # TODO compute output times based on instruction category
-        # TODO Main simulation loop will go here!
+
+
 
