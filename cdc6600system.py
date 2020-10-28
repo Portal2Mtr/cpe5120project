@@ -55,8 +55,13 @@ class CDC6600System():
 
     def getEmptyAddr(self):
         for i in self.addrRegs.keys():
-            if self.addrRegs[i] is None:
-                return i
+            if i != "A0":
+                if self.addrRegs[i] is None:
+                    return i
+
+    # Sets addr register to instruction number from instrList
+    def setAddrByIdx(self,register,idx):
+        self.addrRegs[register] = idx
 
     def getEmptyOp(self):
         for i in self.opRegs.keys():
@@ -127,7 +132,7 @@ class CDC6600System():
         byteCnt = 0
         currWord = 1
         for instr in instrList:
-            if instr.instrtype is "LONG":
+            if instr.instrtype == "LONG":
                 byteCnt += 2
             else:
                 byteCnt += 1
@@ -141,16 +146,54 @@ class CDC6600System():
         self.instrList = instrList
         return instrList
 
-    def preprocessing(self, instr):
-        temp = 0
+
+    def eqnAndRegisters(self,instr):
+
+        memCats = ["FETCH","STORE"]
+
+        # Initialize output address as the lowest index that is empty
+        if instr.category in memCats:
+            memAddr = self.getEmptyAddr()
+            memAddrIdx = int(memAddr[-1])
+            instr.outputAddrIdx = memAddrIdx
+            instr.instrRegs['result'] = memAddr
+            instr.instrRegs['leftOp'] = memAddr
+            self.setAddrByIdx(memAddr,self.instrList.index(instr))
+        else:
+            opAddr = self.getEmptyOp()
+            opAddrIdx = int(opAddr[-1])
+            instr.outputAddrIdx = opAddrIdx
+
+        # Setup FETCH Idxs (simplest)
+        if instr.category == "FETCH":
+            currIdx = instr.outputAddrIdx
+            instr.instrRegs['rightOp'] = "K" + str(currIdx)
+            instr.instrRegs['operand'] = "+"
+            instr.genEqn()
+
+        # TODO after instructions for nonmem operators
+        # if instr.category == "STORE":
+        #     currIdx = instr.outputAddrIdx
+        #     instr.instrRegs['rightOp'] = "K" + str(currIdx)
+        #     instr.instrRegs['operand'] = "+"
+        #     instr.genEqn()
+
+        # TODO Generate equations and desc for nonmemory instrs
+
+    def createDesc(self,instr):
+
+        if instr.category is "FETCH":
+            instr.catDesc = "Fetch"
+
+        instr.instrDesc = instr.catDesc + " " + instr.varName
+
 
     def compute(self, instr):
 
-        # Generate instruction equaiont and description
-        self.preprocessing(instr)
+        # Generate instruction equation and description
+        self.eqnAndRegisters(instr)
+        self.createDesc(instr)
 
         # TODO compute output times based on instruction category
-        temp = 0
-
         # TODO Main simulation loop will go here!
 

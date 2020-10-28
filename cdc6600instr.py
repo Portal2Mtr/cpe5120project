@@ -13,9 +13,11 @@ class CDC6600Instr():
         self.result = None
         self.system = system
         self.category = category
+        self.catDesc = category # Change depending on instruction and contex
         self.currWord = ""
         self.equation = "TEMP"
-        self.instDesc = "TEMP"
+        self.instrDesc = "TEMP"
+        self.outputAddrIdx = 0
 
         # Define category based on func unit of operator
         # TODO
@@ -49,7 +51,7 @@ class CDC6600Instr():
         outputArray = []
         outputArray.append(self.currWord)
         outputArray.append(self.equation)
-        outputArray.append(self.instDesc)
+        outputArray.append(self.instrDesc)
         outputArray.append(self.instrtype)
         for key, value in self.timeDict.items():
             outputArray.append(str(value))
@@ -57,8 +59,7 @@ class CDC6600Instr():
         return outputArray
 
     def genEqn(self):
-        self.equation = self.instrRegs.result+"=" + self.instrRegs.operand + \
-                        self.instrRegs.leftOp + self.instrRegs.rightOp
+        self.equation = self.instrRegs['result']+"=" + self.instrRegs['leftOp'] + self.instrRegs['operand'] + self.instrRegs['rightOp']
 
     def getVar(self):
         return self.varName
