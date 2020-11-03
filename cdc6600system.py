@@ -24,6 +24,8 @@ class CDC6600System():
         self.shortWait = 1
         self.longWait = 2
         self.wordWait = 8
+        self.unitReadyWait = 1
+        self.fetchStoreWait = 4
         self.opMap = {
             "+":"FPADD"
         }
@@ -55,9 +57,7 @@ class CDC6600System():
         self.opMRU = None # Set most recently used op address for calculations
 
         # Setup simulation vars TODO
-        self.currTime = 0
-
-
+        self.currWordTimes = {}
 
     def getEmptyAddr(self):
         for i in self.addrRegs.keys():
@@ -147,7 +147,7 @@ class CDC6600System():
         byteCnt = 0
         currWord = 1
         for instr in instrList:
-            if instr.instrtype == "LONG":
+            if instr.instrType == "LONG":
                 byteCnt += 2
             else:
                 byteCnt += 1
@@ -246,10 +246,61 @@ class CDC6600System():
             instr.catDesc = instr.category
             instr.instrDesc = instr.catDesc + " " + instr.instrRegs['leftOp'] + " "+ instr.instrRegs['rightOp']
 
+
+    def getTimeFromOp(self,category):
+
+        try:
+            return self.funcUnits[category]
+        except(KeyError):
+            if (category == "FETCH") or (category == "STORE"):
+                return self.funcUnits["FPADD"]
+            else:
+                return 0
+
+
     def generateTimes(self,instr):
         # TODO compute output times based on instruction category
         # TODO Main simulation loop will go here!
-        temp = 0
+        instrIdx = self.instrList.index(instr)
+        if instrIdx == 0:
+            instr.timeDict['issueTime'] = 1
+            self.currWordTimes[instr.currWord] = 1
+        else:
+            # Check for next word
+            if self.instrList[instrIdx-1].currWord == instr.currWord:
+                prevType = self.instrList[instrIdx - 1].instrType
+                if prevType == "LONG":
+                    instr.timeDict['issueTime'] = self.longWait + self.instrList[instrIdx - 1].timeDict['issueTime']
+                else:
+                    instr.timeDict['issueTime'] = self.shortWait + self.instrList[instrIdx - 1].timeDict['issueTime']
+            else:
+                instr.timeDict['issueTime'] = self.wordWait + self.currWordTimes[self.instrList[instrIdx-1].currWord]
+                self.currWordTimes[instr.currWord] = instr.timeDict['issueTime']
+
+
+            # TODO fillout conditions
+
+        # Check for timing of start execution
+        if(True): # TODO check for conflicts
+            instr.timeDict['startTime'] = instr.timeDict['issueTime']
+        else:
+            temp = 0
+
+        instr.timeDict['resultTime'] = instr.timeDict['startTime'] + self.getTimeFromOp(instr.category)
+        instr.timeDict['unitReadyTime'] = instr.timeDict['resultTime'] + self.unitReadyWait
+        if instr.category == "FETCH":
+            instr.timeDict['fetchTime'] = instr.timeDict['unitReadyTime'] + self.fetchStoreWait
+        elif instr.category == "STORE":
+            instr.timeDict['storeTime'] = instr.timeDict['unitReadyTime'] + self.fetchStoreWait
+
+        # Done processing instructions and generating times!
+
+
+    def cleanUpTimes(self,instr):
+        # Replace empty times with a dash for better visualization
+        for key,value in instr.timeDict.items():
+            if value == 0:
+                instr.timeDict[key] = '-'
 
     def compute(self, instr):
 
@@ -257,6 +308,7 @@ class CDC6600System():
         self.eqnAndRegisters(instr) # TODO may move to parseandstore and check for conflicts
         self.createDesc(instr)
         self.generateTimes(instr)
+        self.cleanUpTimes(instr)
 
 
 

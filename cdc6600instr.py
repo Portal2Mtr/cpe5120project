@@ -27,9 +27,9 @@ class CDC6600Instr():
         # All nonfunctional unit instructions are long, all functioinal units are short
         longCats = ["FETCH","STORE"]
         if self.category in longCats:
-            self.instrtype = "LONG"
+            self.instrType = "LONG"
         else:
-            self.instrtype = "SHORT"
+            self.instrType = "SHORT"
 
         self.timeDict = {
             "issueTime": 0,
@@ -52,7 +52,7 @@ class CDC6600Instr():
         outputArray.append(self.currWord)
         outputArray.append(self.equation)
         outputArray.append(self.instrDesc)
-        outputArray.append(self.instrtype)
+        outputArray.append(self.instrType)
         for key, value in self.timeDict.items():
             outputArray.append(str(value))
 

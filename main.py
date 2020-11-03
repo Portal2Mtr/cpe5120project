@@ -13,6 +13,7 @@ if __name__ == "__main__":
     # TODO: Parse equation input
     print("Parsing input and setting up system...")
     testInput = "Y = A + B" # Start small
+    # testInput = "Y = A + B + C"
     # testINput = "BX + C" # Verify these instructions work
     # testInput = "AX^2 + BX + C"
 
