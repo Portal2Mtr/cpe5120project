@@ -31,6 +31,7 @@ class CDC6600System():
         self.opMap = {
             "+":"FPADD",
             "-":"FPADD",
+            "*":"MULTIPLY"
         }
         self.funcUnits = {
             "FPADD":3,
@@ -251,6 +252,8 @@ class CDC6600System():
 
         if (category == "FETCH") or (category == "STORE"):
             category = self.getAvailIncr()
+        elif ("MULTIPLY" in category):
+            category = self.getAvailMult()
 
         if(self.busyUntil[category] > timing):
             return self.busyUntil[category]
@@ -270,6 +273,11 @@ class CDC6600System():
         else:
             return 'INCR2'
 
+    def getAvailMult(self):
+        if self.busyUntil['MULTIPLY1'] <= self.busyUntil['MULTIPLY2']:
+            return 'INCR1'
+        else:
+            return 'INCR2'
 
     def createDesc(self,instr):
 
