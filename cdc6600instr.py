@@ -2,12 +2,17 @@
 
 class CDC6600Instr():
 
-    def __init__(self, varName, category, system, operator=None):
+    def __init__(self, varName, category, system, value=None,operator=None):
         # Category types:
         # *Insert functional units here*
         # "FETCH": Load var from core memory
         # "STORE": Store result in core memory
         self.varName = varName
+        self.value = value
+        if isinstance(value,int):
+            self.datatype = "SCALAR"
+        else:
+            self.datatype = "VECTOR"
         self.operator = operator
         self.operand = ""
         self.result = None

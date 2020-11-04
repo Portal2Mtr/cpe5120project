@@ -1,5 +1,7 @@
 from cdc6600instr import CDC6600Instr
+import operator
 
+# TODO Create subclasses for better organization?
 # Class for handling keeping track of each component's timing in the CDC 6600 system
 class CDC6600System():
 
@@ -27,7 +29,8 @@ class CDC6600System():
         self.unitReadyWait = 1
         self.fetchStoreWait = 4
         self.opMap = {
-            "+":"FPADD"
+            "+":"FPADD",
+            "-":"FPADD",
         }
         self.funcUnits = {
             "FPADD":3,
@@ -58,6 +61,9 @@ class CDC6600System():
 
         # Setup simulation vars TODO
         self.currWordTimes = {}
+        self.ops = {"+": operator.add,
+               "-": operator.sub,
+               "*":operator.mul}  # etc.
 
     def getEmptyAddr(self):
         for i in self.addrRegs.keys():
@@ -91,7 +97,7 @@ class CDC6600System():
         return self.opMap[operator]
 
     # Creates instruction objects based on input equation, no calculations or generating new data, thats for compute
-    def parseAndSort(self,command,system):
+    def parseAndSort(self,command,values,system):
 
         brokenInput = command.split(' ')
 
@@ -118,8 +124,9 @@ class CDC6600System():
         instrList = []
 
         # Add fetch objs first
-        for entry in inputVars:
-            newFetch = CDC6600Instr(entry, "FETCH", system)
+        for idx,entry in enumerate(inputVars):
+            value = values[idx]
+            newFetch = CDC6600Instr(entry, "FETCH", system,value=value)
             instrList.append(newFetch)
 
         # TODO More complicated commands, (sort based on availibility?)
@@ -194,8 +201,6 @@ class CDC6600System():
                 instr.instrRegs['result'] = memAddr
                 instr.instrRegs['leftOp'] = memAddr
                 self.setAddrByIdx(memAddr, self.instrList.index(instr))
-
-
 
         else:
             # For operations, switch between x0 and x6 for output
@@ -290,6 +295,18 @@ class CDC6600System():
                 return 0
 
 
+    def performArithmetic(self,instr):
+
+        if instr.category == "STORE":
+            # Sum all operator instructions
+            outputVal = 0
+            for idx,entry in enumerate(self.instrList):
+                if idx == 0:
+                    outputVal = entry.value
+                if entry.operator is not None:
+                    outputVal = self.ops[entry.operator](outputVal,self.instrList[entry.rightOpIdx].value)
+            instr.value = outputVal
+
     def generateTimes(self,instr):
         # TODO compute output times based on instruction category
         # TODO Main simulation loop will go here!
@@ -319,6 +336,9 @@ class CDC6600System():
             # Get timing offset for managing resource conflicts
             instr.timeDict['startTime'] = instr.timeDict['issueTime'] + \
                                           self.checkResourceConflict(instr.category,instr.timeDict['issueTime'])
+
+            # 'Execute' the functional unit
+            self.performArithmetic(instr)
 
         instr.timeDict['resultTime'] = instr.timeDict['startTime'] + self.getTimeFromOp(instr.category)
         instr.timeDict['unitReadyTime'] = instr.timeDict['resultTime'] + self.unitReadyWait

@@ -13,12 +13,15 @@ if __name__ == "__main__":
     # TODO: Parse equation input
     print("Parsing input and setting up system...")
     # testInput = "Y = A + B" # Start small
-    testInput = "Y = A + B + C + D + E"
-    # testINput = "BX + C" # Verify these instructions work
+    testInput = "Y = A - B + C - D"
+    # testInput = "BX + C" # Verify these instructions work
     # testInput = "AX^2 + BX + C"
 
+    scalarValues = [1, 2, 3, 4, 5]
+    # inputVector = [1,2,3,4,5] # TODO
+
     # Parse input and create ordered instruction list
-    instrList = cdc6600.parseAndSort(testInput,cdc6600)
+    instrList = cdc6600.parseAndSort(testInput,scalarValues,cdc6600)
 
     # 'Run' instructions and generate timing output
     # TODO: Run instructions and generate timing output
@@ -34,3 +37,13 @@ if __name__ == "__main__":
     for instr in instrList:
         x.add_row(instr.getDesc())
     print(x.get_string())
+
+    # Print out analysis and output values
+    outputInstr = instrList[-1]
+    print("Hardware Resource Conflicts:")
+    print("TODO")
+    print("Data Resource Conflicts:")
+    print("TODO")
+
+
+    print("Equation Result: " +outputInstr.varName + " = " + str(outputInstr.value))
