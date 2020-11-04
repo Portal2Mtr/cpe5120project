@@ -13,11 +13,11 @@ if __name__ == "__main__":
     # TODO: Parse equation input
     print("Parsing input and setting up system...")
     # testInput = "Y = A + B" # Start small
-    testInput = "Y = A + B * C"
+    testInput = "Y = A * B" # Order of operations doesn't work
     # testInput = "BX + C" # Verify these instructions work
     # testInput = "AX^2 + BX + C"
 
-    scalarValues = [1,2,3]
+    scalarValues = [1,2]
     # inputVector = [1,2,3,4,5] # TODO
 
     # Parse input and create ordered instruction list
@@ -25,13 +25,13 @@ if __name__ == "__main__":
 
     # 'Run' instructions and generate timing output
     # TODO: Run instructions and generate timing output
-    print("Computing instructions...")
+    print("Computing instructions for CDC 6600...")
     for idx,instr in enumerate(instrList):
         cdc6600.compute(instr)
         print('Processed: %s' % instr.equation)
 
     # Create table based on in-class examples
-    print("Creating table...")
+    print("Creating table for CDC 6600...")
     x = PrettyTable()
     x.field_names = ["Word #","Eqn.","Desc.", "Instr. Type","Issue","Start","Result","Unit Ready","Fetch","Store"]
     for instr in instrList:

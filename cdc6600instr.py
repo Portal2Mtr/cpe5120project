@@ -11,7 +11,7 @@ class CDC6600Instr():
         self.value = value
         if isinstance(value,int):
             self.datatype = "SCALAR"
-        else:
+        elif isinstance(value,list):
             self.datatype = "VECTOR"
         self.operator = operator
         self.operand = ""
@@ -72,3 +72,4 @@ class CDC6600Instr():
     def assignOpVarIdx(self,leftIdx,rightIdx):
         self.leftOpIdx = leftIdx
         self.rightOpIdx = rightIdx
+

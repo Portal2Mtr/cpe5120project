@@ -5,7 +5,7 @@ import operator
 # Class for handling keeping track of each component's timing in the CDC 6600 system
 class CDC6600System():
 
-    def __init__(self):
+    def __init__(self,showLoops=False):
         numAddr = 8
         numOp = 8
         numMem = 8
@@ -65,6 +65,8 @@ class CDC6600System():
         self.ops = {"+": operator.add,
                "-": operator.sub,
                "*":operator.mul}  # etc.
+
+        self.showLoops = showLoops
 
     def getEmptyAddr(self):
         for i in self.addrRegs.keys():
@@ -159,6 +161,7 @@ class CDC6600System():
                 if entry is instr.getVar():
                     instr.assignOpVarIdx(leftIdx,rightIdx)
                     break
+
 
         # Assign words to instructions
         byteCnt = 0
@@ -275,9 +278,9 @@ class CDC6600System():
 
     def getAvailMult(self):
         if self.busyUntil['MULTIPLY1'] <= self.busyUntil['MULTIPLY2']:
-            return 'INCR1'
+            return 'MULTIPLY1'
         else:
-            return 'INCR2'
+            return 'MULTIPLY2'
 
     def createDesc(self,instr):
 
@@ -299,8 +302,33 @@ class CDC6600System():
         except(KeyError):
             if (category == "FETCH") or (category == "STORE"):
                 return self.funcUnits[self.getCurrIncr()]
+            elif (category == "MULTIPLY"):
+                return self.funcUnits["MULTIPLY1"] # Doesn't matter for func unit execution
             else:
                 return 0
+
+    def checkDataDepend(self,instr):
+
+        if instr.operator is not None:
+            currStartTime = instr.timeDict['startTime']
+            currLeftInstr = self.instrList[instr.leftOpIdx]
+            currRightInstr = self.instrList[instr.rightOpIdx]
+            if currStartTime < currLeftInstr.timeDict['resultTime']:
+                return currLeftInstr.timeDict['resultTime'] - currStartTime
+            elif currStartTime < currRightInstr.timeDict['resultTime']:
+                return currRightInstr.timeDict['resultTime'] - currStartTime
+
+        elif instr.category == "STORE":
+            oldStartTime = instr.timeDict['startTime']
+            currStartTime = oldStartTime
+            for line in self.instrList:
+                if line.operator is not None:
+                    if line.timeDict['resultTime'] > currStartTime: # TODO Temporary, won't work with vector loops
+                        currStartTime = line.timeDict['resultTime']
+
+            return currStartTime-oldStartTime
+
+        return 0
 
 
     def performArithmetic(self,instr):
@@ -337,16 +365,16 @@ class CDC6600System():
 
             # TODO fillout conditions
 
-        # Check for timing of start execution
-        if False: # TODO Check for data-dependant hazard
-            temp = 0
-        else:
-            # Get timing offset for managing resource conflicts
-            instr.timeDict['startTime'] = instr.timeDict['issueTime'] + \
-                                          self.checkResourceConflict(instr.category,instr.timeDict['issueTime'])
 
-            # 'Execute' the functional unit
-            self.performArithmetic(instr)
+
+        # Get timing offset for managing resource conflicts
+        instr.timeDict['startTime'] = instr.timeDict['issueTime'] + \
+                                      self.checkResourceConflict(instr.category,instr.timeDict['issueTime'])
+        # Check if we need to wait for data dependancy
+        instr.timeDict['startTime'] = instr.timeDict['startTime'] + self.checkDataDepend(instr)
+
+        # 'Execute' the functional unit for output
+        self.performArithmetic(instr)
 
         instr.timeDict['resultTime'] = instr.timeDict['startTime'] + self.getTimeFromOp(instr.category)
         instr.timeDict['unitReadyTime'] = instr.timeDict['resultTime'] + self.unitReadyWait
