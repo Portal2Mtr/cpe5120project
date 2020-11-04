@@ -132,7 +132,7 @@ class CDC6600System():
             newFetch = CDC6600Instr(entry, "FETCH", system,value=value)
             instrList.append(newFetch)
 
-        # TODO More complicated commands, (sort based on availibility?)
+        # TODO More complicated commands, Sort based on priority in use (vectors load before scalars, put longer instr executions first)
         # Add operation instructions
         for entry in operators:
             newOp = CDC6600Instr(entry, "", system=system, operator=entry[0]) # Works for duplicates
@@ -259,9 +259,10 @@ class CDC6600System():
             category = self.getAvailMult()
 
         if(self.busyUntil[category] > timing):
-            return self.busyUntil[category]
+            # TODO Log resource conflict
+            return self.busyUntil[category] - timing
         else:
-            self.busyUntil[category] = self.funcUnits[category] + timing
+            self.busyUntil[category] = self.funcUnits[category] + timing + self.unitReadyWait
             return 0
 
     def getCurrIncr(self):
@@ -311,12 +312,16 @@ class CDC6600System():
 
         if instr.operator is not None:
             currStartTime = instr.timeDict['startTime']
+            oldStartTime = currStartTime
             currLeftInstr = self.instrList[instr.leftOpIdx]
             currRightInstr = self.instrList[instr.rightOpIdx]
-            if currStartTime < currLeftInstr.timeDict['resultTime']:
-                return currLeftInstr.timeDict['resultTime'] - currStartTime
-            elif currStartTime < currRightInstr.timeDict['resultTime']:
-                return currRightInstr.timeDict['resultTime'] - currStartTime
+            currStartTime = max(currLeftInstr.timeDict['resultTime'],currRightInstr.timeDict['resultTime'])
+
+            if currStartTime != oldStartTime:
+                # TODO Log data dependancy!
+                temp = 0
+
+            return currStartTime - oldStartTime
 
         elif instr.category == "STORE":
             oldStartTime = instr.timeDict['startTime']
@@ -324,6 +329,7 @@ class CDC6600System():
             for line in self.instrList:
                 if line.operator is not None:
                     if line.timeDict['resultTime'] > currStartTime: # TODO Temporary, won't work with vector loops
+                        # TODO Log data dependancy
                         currStartTime = line.timeDict['resultTime']
 
             return currStartTime-oldStartTime

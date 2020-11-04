@@ -13,11 +13,11 @@ if __name__ == "__main__":
     # TODO: Parse equation input
     print("Parsing input and setting up system...")
     # testInput = "Y = A + B" # Start small
-    testInput = "Y = A * B" # Order of operations doesn't work
+    testInput = "Y = A + B * C" # Order of operations doesn't work
     # testInput = "BX + C" # Verify these instructions work
     # testInput = "AX^2 + BX + C"
 
-    scalarValues = [1,2]
+    scalarValues = [1,2,3]
     # inputVector = [1,2,3,4,5] # TODO
 
     # Parse input and create ordered instruction list
