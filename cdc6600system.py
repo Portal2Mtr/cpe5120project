@@ -83,9 +83,9 @@ class CDC6600System():
                 if self.memRegs[i] is None:
                     return i
 
-    def checkBusy(self,funcUnit):
+    def checkBusy(self,funcUnit,currTime):
         waitVal = self.busyUntil[funcUnit]
-        return (waitVal > self.currTime)
+        return (waitVal > currTime)
 
     def getFuncFromOp(self,operator):
         return self.opMap[operator]
@@ -104,6 +104,15 @@ class CDC6600System():
         # TODO Assumed all nonalphabet characters are operators, look for squares, separate coefficients from linear vars
         operators = specials
 
+        if len(set(operators)) < len(operators):
+            for entry in set(operators):
+                idxs = [idx for idx,val in enumerate(operators) if val == entry]
+                eqnidxs = [idx for idx,val in enumerate(brokenInput) if val == entry]
+                enums = [str(i+1) for i in idxs]
+                for jdx,val in enumerate(idxs):
+                    operators[val] = operators[val] + enums[jdx]
+                    brokenInput[eqnidxs[jdx]] = operators[val]
+
         ############# Organize instructions
         print("Setting up instructions...")
         instrList = []
@@ -116,7 +125,7 @@ class CDC6600System():
         # TODO More complicated commands, (sort based on availibility?)
         # Add operation instructions
         for entry in operators:
-            newOp = CDC6600Instr(entry, "", system=system, operator=entry)
+            newOp = CDC6600Instr(entry, "", system=system, operator=entry[0]) # Works for duplicates
             instrList.append(newOp)
 
         # Add storing instructions, only have one
@@ -233,6 +242,29 @@ class CDC6600System():
         instr.instrRegs['operand'] = instr.operator
         instr.genEqn()
 
+    def checkResourceConflict(self,category,timing):
+
+        if (category == "FETCH") or (category == "STORE"):
+            category = self.getAvailIncr()
+
+        if(self.busyUntil[category] > timing):
+            return self.busyUntil[category]
+        else:
+            self.busyUntil[category] = self.funcUnits[category] + timing
+            return 0
+
+    def getCurrIncr(self):
+        if self.busyUntil['INCR1'] > self.busyUntil['INCR2']:
+            return 'INCR1'
+        else:
+            return 'INCR2'
+
+    def getAvailIncr(self):
+        if self.busyUntil['INCR1'] <= self.busyUntil['INCR2']:
+            return 'INCR1'
+        else:
+            return 'INCR2'
+
 
     def createDesc(self,instr):
 
@@ -253,7 +285,7 @@ class CDC6600System():
             return self.funcUnits[category]
         except(KeyError):
             if (category == "FETCH") or (category == "STORE"):
-                return self.funcUnits["FPADD"]
+                return self.funcUnits[self.getCurrIncr()]
             else:
                 return 0
 
@@ -281,10 +313,12 @@ class CDC6600System():
             # TODO fillout conditions
 
         # Check for timing of start execution
-        if(True): # TODO check for conflicts
-            instr.timeDict['startTime'] = instr.timeDict['issueTime']
-        else:
+        if False: # TODO Check for data-dependant hazard
             temp = 0
+        else:
+            # Get timing offset for managing resource conflicts
+            instr.timeDict['startTime'] = instr.timeDict['issueTime'] + \
+                                          self.checkResourceConflict(instr.category,instr.timeDict['issueTime'])
 
         instr.timeDict['resultTime'] = instr.timeDict['startTime'] + self.getTimeFromOp(instr.category)
         instr.timeDict['unitReadyTime'] = instr.timeDict['resultTime'] + self.unitReadyWait
