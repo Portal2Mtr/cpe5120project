@@ -5,7 +5,7 @@ import operator
 # Class for handling keeping track of each component's timing in the CDC 6600 system
 class CDC6600System():
 
-    def __init__(self,showLoops=False):
+    def __init__(self,inputVar="X",showLoops=False):
         numAddr = 8
         numOp = 8
         numMem = 8
@@ -29,12 +29,12 @@ class CDC6600System():
         self.unitReadyWait = 1
         self.fetchStoreWait = 4
         self.opMap = {
-            "+":"FPADD",
-            "-":"FPADD",
+            "+":"FLADD",
+            "-":"FLADD",
             "*":"MULTIPLY"
         }
         self.funcUnits = {
-            "FPADD":3,
+            "FLADD":3,
             "MULTIPLY1":10,
             "MULTIPLY2":10,
             "DIVIDE":29,
@@ -46,7 +46,7 @@ class CDC6600System():
             "BRANCH":0 # TODO: Depends on input
         }
         self.busyUntil = {
-            "FPADD": 0,
+            "FLADD": 0,
             "MULTIPLY1": 0,
             "MULTIPLY2": 0,
             "DIVIDE": 0,
@@ -60,13 +60,15 @@ class CDC6600System():
         self.instrList = []
         self.opMRU = None # Set most recently used op address for calculations
 
-        # Setup simulation vars TODO
+        # Setup simulation vars
         self.currWordTimes = {}
         self.ops = {"+": operator.add,
                "-": operator.sub,
                "*":operator.mul}  # etc.
 
         self.showLoops = showLoops
+        self.inputVar = inputVar
+        self.compMode = "SCALAR"
 
     def getEmptyAddr(self):
         for i in self.addrRegs.keys():
@@ -100,20 +102,41 @@ class CDC6600System():
         return self.opMap[operator]
 
     # Creates instruction objects based on input equation, no calculations or generating new data, thats for compute
-    def parseAndSort(self,command,values,system):
+    def parseAndSort(self,command="Y = A + B + C",values={"A":1,"B":2,"C":3},varInput=0,system=None):
 
         brokenInput = command.split(' ')
-
         # Organize/sort instructions
         outputVar = brokenInput[0]
         sepIdx = brokenInput.index("=")
         inputs = brokenInput[(sepIdx + 1):] # TODO add other special operators as inputs
         inputVars = [c for c in inputs if c.isalpha()]
         specials = [c for c in inputs if not c.isalpha()]
+        compInstr = [c for c in inputs if len(c) > 1]
+        operators = []
         # TODO Assumed all nonalphabet characters are operators, look for squares, separate coefficients from linear vars
-        operators = specials
+        for idx,entry in enumerate(inputVars):
+            if self.inputVar in entry:
+                varEntry = inputVars.pop(idx)
+                if len(varEntry) == 2: # BX form
+                    multScal = varEntry[0]
+                    var = varEntry[1]
+                    inputVars.insert(0,multScal)
+                    inputVars.insert(0,var)
+                    operators.append("*")
+                elif "2" in varEntry: # AX2 form
+                    temp = 0 # TODO add x^2 support
 
+                if not isinstance(varInput,list):
+                    self.compMode = "SCALAR"
+                else:
+                    self.compMode = "VECTOR"
+
+        for entry in specials:
+            operators.append(entry)
+
+        # Handle for multiple operators
         if len(set(operators)) < len(operators):
+            # TODO add support for multiple variable equation parts
             for entry in set(operators):
                 idxs = [idx for idx,val in enumerate(operators) if val == entry]
                 eqnidxs = [idx for idx,val in enumerate(brokenInput) if val == entry]
@@ -128,7 +151,10 @@ class CDC6600System():
 
         # Add fetch objs first
         for idx,entry in enumerate(inputVars):
-            value = values[idx]
+            if entry in values.keys():
+                value = values[entry]
+            else:
+                value = varInput
             newFetch = CDC6600Instr(entry, "FETCH", system,value=value)
             instrList.append(newFetch)
 
@@ -141,16 +167,24 @@ class CDC6600System():
         # Add storing instructions, only have one
         instrList.append(CDC6600Instr(outputVar, "STORE", system=system))
 
-
         # Get linked instruction variables from input equation
         for entry in operators:
             # Get linked variables from sorted input for operator
-            opIdx = brokenInput.index(entry)
-            rightVar = brokenInput[opIdx + 1]
-            leftVar = brokenInput[opIdx - 1]
+            try: # Check if operator is in basic equation, otherwise it is is variable operation
+                opIdx = brokenInput.index(entry)
+                rightVar = brokenInput[opIdx + 1]
+                leftVar = brokenInput[opIdx - 1]
+            except (ValueError): # Operator is in variable input
+                # TODO find bx if x2 also in equation
+                workInstr = compInstr[0] # TODO Temp for single variable in eqn
+                scalar = workInstr[0]
+                variable = workInstr[1]
+                leftVar = scalar
+                rightVar = variable
+
             leftIdx = 0
             rightIdx = 0
-            for idx, instr in enumerate(instrList): # Won't work for multiple vars with same name
+            for idx, instr in enumerate(instrList):  # Won't work for multiple vars with same name
                 if rightVar is instr.getVar():
                     rightIdx = idx
 
@@ -159,9 +193,8 @@ class CDC6600System():
 
             for instr in instrList:
                 if entry is instr.getVar():
-                    instr.assignOpVarIdx(leftIdx,rightIdx)
+                    instr.assignOpVarIdx(leftIdx, rightIdx)
                     break
-
 
         # Assign words to instructions
         byteCnt = 0
@@ -231,10 +264,12 @@ class CDC6600System():
             instr.instrRegs['rightOp'] = "K" + str(currIdx)
             instr.instrRegs['operand'] = "+"
             instr.genEqn()
+            instr.descRegisters = instr.instrRegs['result'] + ",X" + instr.instrRegs['result'][-1]
             return
 
         # TODO after instructions for nonmem operators, set as A6 or A7 (from wikipedia), A7 if A6 used
         if instr.category == "STORE":
+            # TODO Different for vector operations
             # Get most recently used operator and its output
             recentOpIdx = self.opRegs['X' + str(self.opMRU)]
             opResult = self.instrList[recentOpIdx].instrRegs['result']
@@ -244,12 +279,21 @@ class CDC6600System():
             instr.instrRegs['operand'] = "+"
             self.memRegs[emptyMem] = self.instrList.index(instr)
             instr.genEqn()
+            instr.descRegisters = instr.instrRegs['result'] + ",X" + instr.instrRegs['result'][-1] + "," + opResult
             return
 
-        instr.instrRegs['leftOp'] = self.instrList[instr.leftOpIdx].instrRegs['result']
-        instr.instrRegs['rightOp'] = self.instrList[instr.rightOpIdx].instrRegs['result']
+        # Operation Insruction
+        # TODO May not work for vector operations
+        leftAddr = self.instrList[instr.leftOpIdx].instrRegs['result']
+        instr.instrRegs['leftOp'] = "X" + leftAddr[-1]
+        rightAddr = self.instrList[instr.rightOpIdx].instrRegs['result']
+        instr.instrRegs['rightOp'] = "X" + rightAddr[-1]
         instr.instrRegs['operand'] = instr.operator
         instr.genEqn()
+        instr.descRegisters = instr.instrRegs['leftOp'] + "," + instr.instrRegs['rightOp'] \
+                              + "," + instr.instrRegs['result']
+        return
+
 
     def checkResourceConflict(self,category,timing):
 
@@ -295,18 +339,17 @@ class CDC6600System():
             instr.catDesc = instr.category
             instr.instrDesc = instr.catDesc + " " + instr.instrRegs['leftOp'] + " "+ instr.instrRegs['rightOp']
 
-
     def getTimeFromOp(self,category):
 
         try:
-            return self.funcUnits[category]
+            return category,self.funcUnits[category]
         except(KeyError):
             if (category == "FETCH") or (category == "STORE"):
-                return self.funcUnits[self.getCurrIncr()]
+                return self.getCurrIncr(),self.funcUnits[self.getCurrIncr()]
             elif (category == "MULTIPLY"):
-                return self.funcUnits["MULTIPLY1"] # Doesn't matter for func unit execution
+                return category,self.funcUnits["MULTIPLY1"] # Doesn't matter for func unit execution
             else:
-                return 0
+                return "NONE",0
 
     def checkDataDepend(self,instr):
 
@@ -315,7 +358,7 @@ class CDC6600System():
             oldStartTime = currStartTime
             currLeftInstr = self.instrList[instr.leftOpIdx]
             currRightInstr = self.instrList[instr.rightOpIdx]
-            currStartTime = max(currLeftInstr.timeDict['resultTime'],currRightInstr.timeDict['resultTime'])
+            currStartTime = max(currLeftInstr.timeDict['resultTime'],currRightInstr.timeDict['resultTime'],oldStartTime)
 
             if currStartTime != oldStartTime:
                 # TODO Log data dependancy!
@@ -382,7 +425,9 @@ class CDC6600System():
         # 'Execute' the functional unit for output
         self.performArithmetic(instr)
 
-        instr.timeDict['resultTime'] = instr.timeDict['startTime'] + self.getTimeFromOp(instr.category)
+        funcName,funcTime = self.getTimeFromOp(instr.category)
+        instr.timeDict['resultTime'] = instr.timeDict['startTime'] + funcTime
+        instr.funcUnit = funcName
         instr.timeDict['unitReadyTime'] = instr.timeDict['resultTime'] + self.unitReadyWait
         if instr.category == "FETCH":
             instr.timeDict['fetchTime'] = instr.timeDict['unitReadyTime'] + self.fetchStoreWait

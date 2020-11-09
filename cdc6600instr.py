@@ -23,6 +23,8 @@ class CDC6600Instr():
         self.equation = "TEMP"
         self.instrDesc = "TEMP"
         self.outputAddrIdx = 0
+        self.funcUnit = "N/A"
+        self.descRegisters = "N/A"
 
         # Define category based on func unit of operator
         # TODO
@@ -61,6 +63,9 @@ class CDC6600Instr():
         for key, value in self.timeDict.items():
             outputArray.append(str(value))
 
+        outputArray.append(self.funcUnit)
+        outputArray.append(self.descRegisters)
+
         return outputArray
 
     def genEqn(self):
@@ -72,4 +77,7 @@ class CDC6600Instr():
     def assignOpVarIdx(self,leftIdx,rightIdx):
         self.leftOpIdx = leftIdx
         self.rightOpIdx = rightIdx
+
+    def __str__(self):
+        return self.varName
 
