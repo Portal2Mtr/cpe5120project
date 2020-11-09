@@ -1,11 +1,14 @@
 from cdc6600instr import CDC6600Instr
 import operator
 
+
 # TODO Create subclasses for better organization?
 # Class for handling keeping track of each component's timing in the CDC 6600 system
 class CDC6600System():
 
-    def __init__(self,inputVar="X",showLoops=False):
+    def __init__(self,inputVar="X",showLoops=False,inputMode="SCALAR"):
+        from cdc6600score import CDC6600Score
+        from cdc6600instrpipe import CDC6600InstrPipe
         numAddr = 8
         numOp = 8
         numMem = 8
@@ -68,7 +71,11 @@ class CDC6600System():
 
         self.showLoops = showLoops
         self.inputVar = inputVar
-        self.compMode = "SCALAR"
+        self.instrPipe = CDC6600InstrPipe(inputMode=inputMode)
+        self.scoreboard = CDC6600Score(inputMode=inputMode)
+
+        self.dataDeps = []
+        self.hardDeps = []
 
     def getEmptyAddr(self):
         for i in self.addrRegs.keys():
@@ -194,6 +201,9 @@ class CDC6600System():
             for instr in instrList:
                 if entry is instr.getVar():
                     instr.assignOpVarIdx(leftIdx, rightIdx)
+                    outputIdx = instrList.index(instr)
+                    instrList[leftIdx].eqnOutputIdx = outputIdx
+                    instrList[rightIdx].eqnOutputIdx = outputIdx
                     break
 
         # Assign words to instructions
@@ -284,9 +294,32 @@ class CDC6600System():
 
         # Operation Insruction
         # TODO May not work for vector operations
+
         leftAddr = self.instrList[instr.leftOpIdx].instrRegs['result']
-        instr.instrRegs['leftOp'] = "X" + leftAddr[-1]
         rightAddr = self.instrList[instr.rightOpIdx].instrRegs['result']
+        if self.instrList[instr.leftOpIdx].eqnOutputIdx != self.instrList[instr.rightOpIdx].eqnOutputIdx:
+            if self.instrList[instr.leftOpIdx].eqnOutputIdx > self.instrList[instr.rightOpIdx].eqnOutputIdx:
+                self.instrList[instr.leftOpIdx].hadComp = True
+                self.instrList[instr.leftOpIdx].prevCompIdxs.append(self.instrList.index(instr))
+            else:
+                self.instrList[instr.rightOpIdx].hadComp = True
+                self.instrList[instr.rightOpIdx].prevCompIdxs.append(self.instrList.index(instr))
+        else:
+            if self.instrList[instr.leftOpIdx].hadComp:
+                prevCompIdx = self.instrList[instr.leftOpIdx].prevCompIdxs[0] # TODO Temp
+                leftAddr = self.instrList[prevCompIdx].instrRegs["result"]
+
+            if self.instrList[instr.rightOpIdx].hadComp:
+                prevCompIdx = self.instrList[instr.rightOpIdx].prevCompIdxs[0]  # TODO Temp
+                leftAddr = self.instrList[prevCompIdx].instrRegs["result"]
+
+
+
+        leftOutput = self.instrList[instr.leftOpIdx].eqnOutputIdx
+        rightOutput = self.instrList[instr.rightOpIdx].eqnOutputIdx
+        # Check for previous computation
+
+        instr.instrRegs['leftOp'] = "X" + leftAddr[-1]
         instr.instrRegs['rightOp'] = "X" + rightAddr[-1]
         instr.instrRegs['operand'] = instr.operator
         instr.genEqn()
@@ -295,7 +328,9 @@ class CDC6600System():
         return
 
 
-    def checkResourceConflict(self,category,timing):
+    def checkResourceConflict(self,instr):
+        category = instr.category
+        timing = instr.timeDict['issueTime']
 
         if (category == "FETCH") or (category == "STORE"):
             category = self.getAvailIncr()
@@ -303,7 +338,9 @@ class CDC6600System():
             category = self.getAvailMult()
 
         if(self.busyUntil[category] > timing):
-            # TODO Log resource conflict
+            instrIdx = self.instrList.index(instr)
+            print("Hardware Resource dependancy at instr idx %s!" % instrIdx)
+            self.hardDeps.append(instrIdx)
             return self.busyUntil[category] - timing
         else:
             self.busyUntil[category] = self.funcUnits[category] + timing + self.unitReadyWait
@@ -361,19 +398,25 @@ class CDC6600System():
             currStartTime = max(currLeftInstr.timeDict['resultTime'],currRightInstr.timeDict['resultTime'],oldStartTime)
 
             if currStartTime != oldStartTime:
-                # TODO Log data dependancy!
-                temp = 0
+                instrIdx = self.instrList.index(instr)
+                print("Data dependancy at instr idx %s!" % instrIdx)
+                self.dataDeps.append(instrIdx)
 
             return currStartTime - oldStartTime
 
         elif instr.category == "STORE":
+            hasLogged = False
             oldStartTime = instr.timeDict['startTime']
             currStartTime = oldStartTime
             for line in self.instrList:
                 if line.operator is not None:
                     if line.timeDict['resultTime'] > currStartTime: # TODO Temporary, won't work with vector loops
-                        # TODO Log data dependancy
                         currStartTime = line.timeDict['resultTime']
+                        if not hasLogged:
+                            hasLogged = True
+                            instrIdx = self.instrList.index(instr)
+                            print("Data dependancy at instr idx %s!" % instrIdx)
+                            self.dataDeps.append(instrIdx)
 
             return currStartTime-oldStartTime
 
@@ -418,7 +461,7 @@ class CDC6600System():
 
         # Get timing offset for managing resource conflicts
         instr.timeDict['startTime'] = instr.timeDict['issueTime'] + \
-                                      self.checkResourceConflict(instr.category,instr.timeDict['issueTime'])
+                                      self.checkResourceConflict(instr)
         # Check if we need to wait for data dependancy
         instr.timeDict['startTime'] = instr.timeDict['startTime'] + self.checkDataDepend(instr)
 
@@ -452,5 +495,13 @@ class CDC6600System():
         self.cleanUpTimes(instr)
 
 
-
+# class CDC6600InstrPipe(CDC6600System):
+#     def __init__(self,inputMode):
+#         # Selector for input instruction types (easier to manage)
+#         self.inputMode = inputMode
+#
+# class CDC6600Score(CDC6600System):
+#     def __init__(self,inputMode):
+#         # Selector for input instruction types (easier to manage)
+#         self.inputMode = inputMode
 

@@ -25,6 +25,9 @@ class CDC6600Instr():
         self.outputAddrIdx = 0
         self.funcUnit = "N/A"
         self.descRegisters = "N/A"
+        self.eqnOutputIdx = None
+        self.hadComp = False
+        self.prevCompIdxs = []
 
         # Define category based on func unit of operator
         # TODO
