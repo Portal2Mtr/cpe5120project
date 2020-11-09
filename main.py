@@ -24,16 +24,14 @@ def getInputEqn():
     return xinput,selEqn,inputMode
 
 
-
 if __name__ == "__main__":
-
     # Generate System object for generating timing diagram
     xinput = 2
     # inputVector = [1,2,3,4,5] # TODO
     inputMode = "SCALAR"
     # testInput = "Y = A + B + C"
-    # testInput = "Y = AXS" # TODO Fix bugs
-    testInput = "Y = BX + C"
+    testInput = "Y = AXS" # TODO A*X bug in output table
+    # testInput = "Y = BX + C"
     # testInput = "Y = AX^2 + BX"
     # testInput = "Y = BX + C"  # Verify these instructions work
     # testInput = "AX^2 + BX + C"

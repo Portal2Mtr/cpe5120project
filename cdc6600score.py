@@ -1,4 +1,4 @@
-# Functions representing Scoreboard computations
+# Functions representing Scoreboard computations (parsing data and managing instruction meta generation)
 from cdc6600instr import *
 
 # Creates instruction objects based on input equation, no calculations or generating new data, thats for compute
@@ -148,7 +148,6 @@ def eqnAndRegisters(self,instr):
             instr.instrRegs['result'] = memAddr
             instr.instrRegs['leftOp'] = memAddr
             self.setAddrByIdx(memAddr, self.instrList.index(instr))
-
     else:
         # For operations, switch between x0 and x6 for output
         if (self.opMRU == None) or (self.opMRU == 6):
@@ -196,6 +195,7 @@ def eqnAndRegisters(self,instr):
     # TODO May not work for vector operations
     leftAddr = self.instrList[instr.leftOpIdx].instrRegs['result']
     rightAddr = self.instrList[instr.rightOpIdx].instrRegs['result']
+    # Update instruction list entry with previously computed indicator to manage dependancies registers
     if self.instrList[instr.leftOpIdx].eqnOutputIdx != self.instrList[instr.rightOpIdx].eqnOutputIdx:
         if self.instrList[instr.leftOpIdx].eqnOutputIdx > self.instrList[instr.rightOpIdx].eqnOutputIdx:
             self.instrList[instr.leftOpIdx].hadComp = True
@@ -212,10 +212,19 @@ def eqnAndRegisters(self,instr):
             prevCompIdx = self.instrList[instr.rightOpIdx].prevCompIdxs[0]  # TODO Will not work for multiple adds
             leftAddr = self.instrList[prevCompIdx].instrRegs["result"]
 
+    if "X" in [self.instrList[instr.leftOpIdx].getVar(),self.instrList[instr.rightOpIdx].getVar()]:
+        xinstr = [i for i in self.instrList if i.getVar() == "X"][0] # Only one register, wont work for vectors
+        if xinstr.mruIdx is not None:
+            # X has been used in previous calculation, use that register as input for this calculation
+            if "X" == self.instrList[instr.leftOpIdx].getVar():
+                leftAddr = self.instrList[xinstr.mruIdx].instrRegs['result']
+            else:
+                rightAddr = self.instrList[xinstr.mruIdx].instrRegs['result']
+        else:
+            xinstr.mruIdx = self.instrList.index(instr)
 
-
-    leftOutput = self.instrList[instr.leftOpIdx].eqnOutputIdx
-    rightOutput = self.instrList[instr.rightOpIdx].eqnOutputIdx
+    # leftOutput = self.instrList[instr.leftOpIdx].eqnOutputIdx
+    # rightOutput = self.instrList[instr.rightOpIdx].eqnOutputIdx
     # Check for previous computation
 
     instr.instrRegs['leftOp'] = "X" + leftAddr[-1]

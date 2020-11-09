@@ -31,7 +31,7 @@ def checkDataDepend(self, instr):
         currLeftInstr = self.instrList[instr.leftOpIdx]
         currRightInstr = self.instrList[instr.rightOpIdx]
         currStartTime = max(currLeftInstr.timeDict['resultTime'], currRightInstr.timeDict['resultTime'],
-                            oldStartTime)
+                            oldStartTime,currLeftInstr.busyUntil,currRightInstr.busyUntil)
 
         if currStartTime != oldStartTime:
             instrIdx = self.instrList.index(instr)
@@ -63,12 +63,39 @@ def performArithmetic(self, instr):
     if instr.category == "STORE":
         # Sum all operator instructions
         outputVal = 0
+        instrDict = {}
+        varDict = {}
+        btwnInstr = {} # TODO Only supports addition, will need to parse other operators from equation
+        alreadyCalc = []
         for idx, entry in enumerate(self.instrList):
-            if idx == 0:
-                outputVal = entry.value
-            if entry.operator is not None:
-                outputVal = self.ops[entry.operator](outputVal, self.instrList[entry.rightOpIdx].value)
-        instr.value = outputVal
+
+            if entry.operator is None:
+                varDict[entry.varName] = entry.value
+                # outputVal = self.ops[entry.operator](outputVal, self.instrList[entry.rightOpIdx].value)
+            else:
+                instrDict[entry.varName] = [entry.operator, self.instrList[entry.leftOpIdx].varName,
+                                            self.instrList[entry.rightOpIdx].varName]
+
+        varDict['Y'] = 0
+        for key,values in instrDict.items():
+            leftOp =varDict[values[1]]
+            rightOp = varDict[values[2]]
+            if values[1] in alreadyCalc:
+                varDict['Y'] += rightOp
+                continue
+            elif values[2] in alreadyCalc:
+                varDict['Y'] += leftOp
+                continue
+            else:
+                outputVal = self.ops[values[0]](leftOp, rightOp)
+            if values[1] == values[2]: # Squaring
+                varDict[values[1]] = outputVal
+            else:
+                varDict['Y'] += outputVal
+                alreadyCalc.append(values[1])
+                alreadyCalc.append(values[2])
+
+        instr.value = varDict['Y']
 
 def generateTimes(self, instr):
     # TODO compute output times based on instruction category
@@ -94,6 +121,8 @@ def generateTimes(self, instr):
     # Get timing offset for managing resource conflicts
     instr.timeDict['startTime'] = instr.timeDict['issueTime'] + \
                                   self.checkResourceConflict(instr)
+    # Update Variable and make sure its not being used by another instruction
+
     # Check if we need to wait for data dependancy
     instr.timeDict['startTime'] = instr.timeDict['startTime'] + self.checkDataDepend(instr)
 
@@ -103,6 +132,11 @@ def generateTimes(self, instr):
     funcName, funcTime = self.getTimeFromOp(instr.category)
     instr.timeDict['resultTime'] = instr.timeDict['startTime'] + funcTime
     instr.funcUnit = funcName
+    if instr.operator is not None:
+        self.instrList[instr.leftOpIdx].busyUntil = instr.timeDict['resultTime']
+        self.instrList[instr.rightOpIdx].busyUntil = instr.timeDict['resultTime']
+
+
     instr.timeDict['unitReadyTime'] = instr.timeDict['resultTime'] + self.unitReadyWait
     if instr.category == "FETCH":
         instr.timeDict['fetchTime'] = instr.timeDict['unitReadyTime'] + self.fetchStoreWait

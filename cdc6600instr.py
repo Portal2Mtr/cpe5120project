@@ -28,6 +28,8 @@ class CDC6600Instr():
         self.eqnOutputIdx = None
         self.hadComp = False
         self.prevCompIdxs = []
+        self.busyUntil = 0
+        self.mruIdx = None
 
         # Define category based on func unit of operator
         # TODO

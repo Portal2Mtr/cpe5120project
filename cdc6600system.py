@@ -110,7 +110,6 @@ class CDC6600System():
     def getFuncFromOp(self,operator):
         return self.opMap[operator]
 
-
     def creatInstrList(self,command, values, varInput, system):
         # Move parseandsort to make editing easer
         instrList = self.parseAndSort(command=command, values=values, varInput=varInput, system=system)
@@ -155,7 +154,7 @@ class CDC6600System():
 
     def compute(self, instr):
         # Generate instruction equation and description from
-        self.eqnAndRegisters(instr)  # TODO may move to parseandstore and check for conflicts
+        self.eqnAndRegisters(instr)
         self.createDesc(instr)
         self.generateTimes(instr)
         self.cleanUpTimes(instr)
