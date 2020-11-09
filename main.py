@@ -3,7 +3,7 @@ from cdc6600system import CDC6600System
 # from cdc7600instr import CDC7600Instr
 
 def getInputEqn():
-    eqns = ["Y = A + B","Y = A + B + C","Y = BX + C","Y = AX^2 + BX + C","Y = AX^2 + BX","Y = AX^2 + BX + C",
+    eqns = ["Y = A + B","Y = A + B + C","Y = BX","Y = BX + C","Y = AX^2 + BX + C","Y = AX^2 + BX","Y = AX^2 + BX + C",
             "Y = BX (Vector)","Y = AX^2 + BX (Vector)"]
 
     print("Select equation to test:")
@@ -28,13 +28,16 @@ def getInputEqn():
 if __name__ == "__main__":
 
     # Generate System object for generating timing diagram
-    xinput = 3
+    xinput = 2
     # inputVector = [1,2,3,4,5] # TODO
     inputMode = "SCALAR"
-    testInput = "Y = A + B + C" # TODO Fix order error, output should do last add
+    # testInput = "Y = A + B + C"
+    # testInput = "Y = AXS" # TODO Fix bugs
+    testInput = "Y = BX + C"
+    # testInput = "Y = AX^2 + BX"
     # testInput = "Y = BX + C"  # Verify these instructions work
     # testInput = "AX^2 + BX + C"
-    scalarValues = {"A": 1, "B": 2, "C": 3}
+    scalarValues = {"A": 5, "B": 2, "C": 3}
     selEqn = testInput
     # TODO Enable once project is done
     # xinput,selEqn,inputMode = getInputEqn()
@@ -45,7 +48,7 @@ if __name__ == "__main__":
     print("Parsing input and setting up system...")
 
     # Parse input and create ordered instruction list
-    instrList = cdc6600.parseAndSort(command=selEqn,values=scalarValues,varInput=xinput,system=cdc6600)
+    instrList = cdc6600.creatInstrList(command=selEqn,values=scalarValues,varInput=xinput,system=cdc6600)
 
     # 'Run' instructions and generate timing output
     print("Computing instructions for CDC 6600...")
