@@ -60,42 +60,42 @@ def checkDataDepend(self, instr):
 
 def performArithmetic(self, instr):
 
-    if instr.category == "STORE":
-        # Sum all operator instructions
-        outputVal = 0
-        instrDict = {}
-        varDict = {}
-        btwnInstr = {} # TODO Only supports addition, will need to parse other operators from equation
-        alreadyCalc = []
-        for idx, entry in enumerate(self.instrList):
+    # Sum all operator instructions
+    outputVal = 0
+    instrDict = {}
+    varDict = {}
+    btwnInstr = {} # TODO Only supports addition, will need to parse other operators from equation
+    alreadyCalc = []
+    for idx, entry in enumerate(self.instrList):
+        if entry.operator is None:
+            varDict[entry.varName] = entry.value
+            if entry.varName == 'X':
+                varDict['oldX'] = entry.value
+            # outputVal = self.ops[entry.operator](outputVal, self.instrList[entry.rightOpIdx].value)
+        else:
+            instrDict[entry.varName] = [entry.operator, self.instrList[entry.leftOpIdx].varName,
+                                        self.instrList[entry.rightOpIdx].varName]
 
-            if entry.operator is None:
-                varDict[entry.varName] = entry.value
-                # outputVal = self.ops[entry.operator](outputVal, self.instrList[entry.rightOpIdx].value)
-            else:
-                instrDict[entry.varName] = [entry.operator, self.instrList[entry.leftOpIdx].varName,
-                                            self.instrList[entry.rightOpIdx].varName]
+    # TODO Setup splitting of X calculations between original and squared X versions
 
-        varDict['Y'] = 0
-        for key,values in instrDict.items():
-            leftOp =varDict[values[1]]
-            rightOp = varDict[values[2]]
-            if values[1] in alreadyCalc:
-                varDict['Y'] += rightOp
-                continue
-            elif values[2] in alreadyCalc:
-                varDict['Y'] += leftOp
-                continue
-            else:
-                outputVal = self.ops[values[0]](leftOp, rightOp)
-            if values[1] == values[2]: # Squaring
-                varDict[values[1]] = outputVal
-            else:
-                varDict['Y'] += outputVal
-                alreadyCalc.append(values[1])
-                alreadyCalc.append(values[2])
+    varDict['Y'] = 0
+    for key,values in instrDict.items():
+        if key == "+":
+            continue # Already summing Y
+        leftOp =varDict[values[1]]
+        rightOp = varDict[values[2]]
+        if key[-1] == "2": # Calculating BX
+            outputVal = self.ops[values[0]](leftOp, varDict['oldX'])
+        else:
+            outputVal = self.ops[values[0]](leftOp, rightOp)
+        if values[1] == values[2]: # Squaring
+            varDict[values[1]] = outputVal
+        else:
+            varDict['Y'] += outputVal
+            alreadyCalc.append(values[1])
+            alreadyCalc.append(values[2])
 
-        instr.value = varDict['Y']
+    instr.value = varDict['Y']
 
 def generateTimes(self, instr):
     # TODO compute output times based on instruction category
@@ -127,7 +127,8 @@ def generateTimes(self, instr):
     instr.timeDict['startTime'] = instr.timeDict['startTime'] + self.checkDataDepend(instr)
 
     # 'Execute' the functional unit for output
-    self.performArithmetic(instr)
+    if instr.category == "STORE":
+        self.performArithmetic(instr)
 
     funcName, funcTime = self.getTimeFromOp(instr.category)
     instr.timeDict['resultTime'] = instr.timeDict['startTime'] + funcTime
@@ -150,8 +151,3 @@ def cleanUpTimes(self, instr):
     for key, value in instr.timeDict.items():
         if value == 0:
             instr.timeDict[key] = '-'
-
-
-
-
-

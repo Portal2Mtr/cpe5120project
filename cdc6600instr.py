@@ -86,3 +86,10 @@ class CDC6600Instr():
     def __str__(self):
         return self.varName
 
+    def removeDescDuplicates(self):
+        origDesc = self.descRegisters
+        regs = origDesc.split(",")
+        setRegs = list(set(regs))
+        newDesc = ",".join(setRegs)
+        self.descRegisters = newDesc
+

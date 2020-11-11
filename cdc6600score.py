@@ -11,6 +11,7 @@ def parseAndSort(self, command="Y = A + B + C", values={"A": 1, "B": 2, "C": 3},
     inputVars = [c for c in inputs if c.isalpha()]
     specials = [c for c in inputs if not c.isalpha()]
     compInstr = [c for c in inputs if len(c) > 1]
+    compEnums = [(i + 1) for i in range(len(compInstr))]
     operators = []
     # TODO Assumed all nonalphabet characters are operators, look for squares, separate coefficients from linear vars
     for idx, entry in enumerate(inputVars):
@@ -38,23 +39,37 @@ def parseAndSort(self, command="Y = A + B + C", values={"A": 1, "B": 2, "C": 3},
     for entry in specials:
         operators.append(entry)
 
+    temp = set(operators)
     # Handle for multiple operators
-    if len(set(operators)) < len(operators):
+    # TODO Just do multiple additions
+    plusOps =[i for i in operators if i == "+"]
+    if len(set(plusOps)) < len(plusOps): # TODO Fix
         # TODO add support for multiple variable equation parts
         for entry in set(operators):
             idxs = [idx for idx, val in enumerate(operators) if val == entry]
             eqnidxs = [idx for idx, val in enumerate(brokenInput) if val == entry]
+            if len(eqnidxs) == 0: # Handle for if operators are in variables
+                eqnidxs = [idx for idx, val in enumerate(brokenInput) if len(val) > 1]
             enums = [str(i + 1) for i in idxs]
             for jdx, val in enumerate(idxs):
                 operators[val] = operators[val] + enums[jdx]
                 brokenInput[eqnidxs[jdx]] = operators[val]
+
+    # Label multplication operations for multiple complex operations
+    if len(compInstr) > 0:
+        # Setup for multiple multiplication operations
+        multOps = [i for i in operators if i == "*"]
+        # Match operations with complex instructions
+        idxs = [idx for idx, val in enumerate(operators) if val == "*"]
+        for jdx, val in enumerate(idxs):
+            operators[val] = operators[val] + str(compEnums[jdx])
 
     ############# Organize instructions
     print("Setting up instructions...")
     instrList = []
 
     # Add fetch objs first
-    for idx, entry in enumerate(inputVars):
+    for idx, entry in enumerate(set(inputVars)):
         if entry in values.keys():
             value = values[entry]
         else:
@@ -62,7 +77,17 @@ def parseAndSort(self, command="Y = A + B + C", values={"A": 1, "B": 2, "C": 3},
         newFetch = CDC6600Instr(entry, "FETCH", system, value=value)
         instrList.append(newFetch)
 
-    # TODO More complicated commands, Sort based on priority in use (vectors load before scalars, put longer instr executions first)
+    # Sort inputs by putting X first then go by alphabet
+    corrOrder = ['X','A','B','C'] # Simple alpha sorting, too lazy to do it properly
+    corrIdx = []
+    tempList = [str(i) for i in instrList]
+    for entry in corrOrder:
+        if entry in tempList:
+            corrIdx.append(tempList.index(entry))
+
+    instrList = [instrList[i] for i in corrIdx]
+
+    # TODO Vector support
     # Add operation instructions
     for entry in operators:
         newOp = CDC6600Instr(entry, "", system=system, operator=entry[0])  # Works for duplicates
@@ -72,22 +97,34 @@ def parseAndSort(self, command="Y = A + B + C", values={"A": 1, "B": 2, "C": 3},
     instrList.append(CDC6600Instr(outputVar, "STORE", system=system))
 
     # Get linked instruction variables from input equation
-    for entry in operators:
+    opIter = iter(operators)
+    compIdx = 0
+    for idx,entry in enumerate(opIter):
         # Get linked variables from sorted input for operator
         try:  # Check if operator is in basic equation, otherwise it is in variable operation
             opIdx = brokenInput.index(entry)
             rightVar = brokenInput[opIdx + 1]
             leftVar = brokenInput[opIdx - 1]
         except (ValueError):  # Operator is in variable input
-            # TODO find bx if x2 also in equation
-            if entry == "*":
-                workInstr = compInstr[0]  # TODO Temp for single variable in eqn
-                scalar = workInstr[0]
-                variable = workInstr[1]
-                leftVar = scalar
-                rightVar = variable
+            # TODO Add support for additional x var operations?
+            if "s" not in entry:
+                if entry[-1].isnumeric():
+                    # TODO is divided between mutliple comp units
+                    workInstr = compInstr[compIdx]
+                    scalar = workInstr[0]
+                    compIdx += 1
+                    variable = workInstr[1]
+                    leftVar = scalar
+                    rightVar = variable
+
+                else:
+                    workInstr = compInstr[compIdx]
+                    scalar = workInstr[0]
+                    variable = workInstr[1]
+                    leftVar = scalar
+                    rightVar = variable
             else:  # x^2
-                workInstr = compInstr[0]  # TODO Temp for single variable in eqn
+                workInstr = compInstr[compIdx]
                 variable = workInstr[1]
                 leftVar = variable
                 rightVar = variable
@@ -105,7 +142,7 @@ def parseAndSort(self, command="Y = A + B + C", values={"A": 1, "B": 2, "C": 3},
             if entry is instr.getVar():
                 instr.assignOpVarIdx(leftIdx, rightIdx)
                 outputIdx = instrList.index(instr)
-                instrList[leftIdx].eqnOutputIdx = outputIdx
+                instrList[leftIdx].eqnOutputIdx = outputIdx # TODO Does this work with multiple X queries?
                 instrList[rightIdx].eqnOutputIdx = outputIdx
                 break
 
@@ -145,26 +182,42 @@ def eqnAndRegisters(self,instr):
             memAddr = self.getEmptyAddr()
             memAddrIdx = int(memAddr[-1])
             instr.outputAddrIdx = memAddrIdx
-            instr.instrRegs['result'] = memAddr
+            # instr.instrRegs['result'] = memAddr
             instr.instrRegs['leftOp'] = memAddr
             self.setAddrByIdx(memAddr, self.instrList.index(instr))
     else:
-        # For operations, switch between x0 and x6 for output
-        if (self.opMRU == None) or (self.opMRU == 6):
-            self.opMRU = 0
-            opAddr = 'X0'
-            opAddrIdx = int(opAddr[-1])
-            instr.outputAddrIdx = opAddrIdx
-            instr.instrRegs['result'] = opAddr
-            self.opRegs['X0'] = self.instrList.index(instr)
+        # For operations, use priority list
+        if instr.operator == '+':
+            # Check if last addition
+            selfIdx = self.instrList.index(instr)
+            lastPlus = True
+            for i in range(selfIdx+1,len(self.instrList)):
+                if self.instrList[i].getVar == "+":
+                    lastPlus = False
 
+            if lastPlus: # Output to 7
+                temp = 0
+                opAddr = self.opRegsList[-1]
+                opAddrIdx = int(opAddr[-1])
+                instr.outputAddrIdx = opAddrIdx
+                instr.instrRegs['result'] = opAddr
+                self.opRegs[opAddr] = self.instrList.index(instr)
+
+            else: # Regular output
+                self.opRegIdx += 1
+                opAddr = self.opRegsList[self.opRegIdx]
+                opAddrIdx = int(opAddr[-1])
+                instr.outputAddrIdx = opAddrIdx
+                instr.instrRegs['result'] = opAddr
+                self.opRegs[opAddr] = self.instrList.index(instr)
         else:
-            self.opMRU = 6
-            opAddr = 'X6'
+            self.opRegIdx += 1
+            opAddr = self.opRegsList[self.opRegIdx]
             opAddrIdx = int(opAddr[-1])
             instr.outputAddrIdx = opAddrIdx
             instr.instrRegs['result'] = opAddr
-            self.opRegs['X6'] = self.instrList.index(instr)
+            self.opRegs[opAddr] = self.instrList.index(instr)
+
 
 
     # Setup FETCH Idxs (simplest)
@@ -174,21 +227,31 @@ def eqnAndRegisters(self,instr):
         instr.instrRegs['operand'] = "+"
         instr.genEqn()
         instr.descRegisters = instr.instrRegs['result'] + ",X" + instr.instrRegs['result'][-1]
+        instr.removeDescDuplicates()
         return
 
     # TODO after instructions for nonmem operators, set as A6 or A7 (from wikipedia), A7 if A6 used
     if instr.category == "STORE":
         # TODO Different for vector operations
         # Get most recently used operator and its output
-        recentOpIdx = self.opRegs['X' + str(self.opMRU)]
-        opResult = self.instrList[recentOpIdx].instrRegs['result']
+
+        recentOp = self.instrList[self.instrList.index(instr) - 1]
+        opResult = recentOp.instrRegs['result']
+
         emptyMem = self.getEmptyMem()
         instr.instrRegs['rightOp'] = emptyMem
-        instr.instrRegs['leftOp'] = opResult
+        instr.instrRegs['leftOp'] = 'A' + opResult[-1]
         instr.instrRegs['operand'] = "+"
         self.memRegs[emptyMem] = self.instrList.index(instr)
+        #Update output register and check if x6 is used
+        if self.opRegs['X6'] is not None:
+            instr.instrRegs['result'] = 'A7'
+        else:
+            instr.instrRegs['result'] = 'A6'
         instr.genEqn()
         instr.descRegisters = instr.instrRegs['result'] + ",X" + instr.instrRegs['result'][-1] + "," + opResult
+        instr.removeDescDuplicates()
+
         return
 
     # Operation Insruction
@@ -219,7 +282,12 @@ def eqnAndRegisters(self,instr):
             if "X" == self.instrList[instr.leftOpIdx].getVar():
                 leftAddr = self.instrList[xinstr.mruIdx].instrRegs['result']
             else:
-                rightAddr = self.instrList[xinstr.mruIdx].instrRegs['result']
+                # Check if in squared form, if not then use original x value
+                if instr.varName[-1] == '2':
+                    # Not in squared form, use original x register
+                    rightAddr = xinstr.instrRegs['result']
+                else:
+                    rightAddr = self.instrList[xinstr.mruIdx].instrRegs['result']
         else:
             xinstr.mruIdx = self.instrList.index(instr)
 
@@ -227,12 +295,21 @@ def eqnAndRegisters(self,instr):
     # rightOutput = self.instrList[instr.rightOpIdx].eqnOutputIdx
     # Check for previous computation
 
-    instr.instrRegs['leftOp'] = "X" + leftAddr[-1]
-    instr.instrRegs['rightOp'] = "X" + rightAddr[-1]
+    if "+" in instr.varName:
+
+        instr.instrRegs['leftOp'] = 'X' + self.opRegsList[self.opRegIdx -1][-1]
+        instr.instrRegs['rightOp'] = 'X' + self.opRegsList[self.opRegIdx - 2][-1]
+
+        # TODO Manage +2
+    else:
+        instr.instrRegs['leftOp'] = "X" + leftAddr[-1]
+        instr.instrRegs['rightOp'] = "X" + rightAddr[-1]
     instr.instrRegs['operand'] = instr.operator
     instr.genEqn()
     instr.descRegisters = instr.instrRegs['leftOp'] + "," + instr.instrRegs['rightOp'] \
                           + "," + instr.instrRegs['result']
+    instr.removeDescDuplicates()
+
     return
 
 

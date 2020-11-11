@@ -60,7 +60,8 @@ class CDC6600System():
             "BRANCH": 0
         }
         self.instrList = []
-        self.opMRU = None # Set most recently used op address for calculations
+        self.opRegsList = ['X0','X6','X0','X5','X7']
+        self.opRegIdx = -1
 
         # Setup simulation vars
         self.currWordTimes = {}

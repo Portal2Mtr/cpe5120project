@@ -3,8 +3,7 @@ from cdc6600system import CDC6600System
 # from cdc7600instr import CDC7600Instr
 
 def getInputEqn():
-    eqns = ["Y = A + B","Y = A + B + C","Y = BX","Y = BX + C","Y = AX^2 + BX + C","Y = AX^2 + BX","Y = AX^2 + BX + C",
-            "Y = BX (Vector)","Y = AX^2 + BX (Vector)"]
+    eqns = ["Y = AX^2 + BX","Y = AX^2 + BX + C","Y = AX^2 + BX (Vector)"]
 
     print("Select equation to test:")
     for idx, entry in enumerate(eqns):
@@ -16,6 +15,7 @@ def getInputEqn():
     inputMode = "SCALAR"
     if " (Vector)" in selEqn:
         selEqn = selEqn.replace(" (Vector)","")
+        selEqn = selEqn.replace("^2","S")
         inputMode = "VECTOR"
         # TODO Add vector support
 
@@ -30,12 +30,12 @@ if __name__ == "__main__":
     # inputVector = [1,2,3,4,5] # TODO
     inputMode = "SCALAR"
     # testInput = "Y = A + B + C"
-    testInput = "Y = AXS" # TODO A*X bug in output table
+    # testInput = "Y = AXS"
     # testInput = "Y = BX + C"
-    # testInput = "Y = AX^2 + BX"
+    testInput = "Y = AXS + BX"  # TODO Fix Complex dependancies in output eqns
     # testInput = "Y = BX + C"  # Verify these instructions work
     # testInput = "AX^2 + BX + C"
-    scalarValues = {"A": 5, "B": 2, "C": 3}
+    scalarValues = {"A": 1, "B": 2, "C": 3}
     selEqn = testInput
     # TODO Enable once project is done
     # xinput,selEqn,inputMode = getInputEqn()
