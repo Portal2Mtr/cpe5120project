@@ -2,6 +2,7 @@ from cdc6600instr import CDC6600Instr
 import operator
 
 
+
 # TODO Create subclasses for better organization?
 # Class for handling keeping track of each component's timing in the CDC 6600 system
 class CDC6600System():
@@ -74,6 +75,13 @@ class CDC6600System():
 
         self.dataDeps = []
         self.hardDeps = []
+
+        # Used for keeping track of complex instruction objects
+        if inputMode == "SCALAR":
+            # Assume one of each type TODO add more?
+            self.compDict = {'SQU':None,'SCA':None,'CON':None,'OPS':None,'OUT':None}
+        else:
+            self.compInstrVector = {} # TODO Implement vector support
 
     # Move functions to separate files for cleaner editing
     from cdc6600score import parseAndSort,eqnAndRegisters

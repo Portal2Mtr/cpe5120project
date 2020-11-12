@@ -2,7 +2,7 @@
 
 class CDC6600Instr():
 
-    def __init__(self, varName, category, system, value=None,operator=None):
+    def __init__(self, varName=None, category=None, system=None,instrManager=None, value=None,operator=None):
         # Category types:
         # *Insert functional units here*
         # "FETCH": Load var from core memory
@@ -30,6 +30,7 @@ class CDC6600Instr():
         self.prevCompIdxs = []
         self.busyUntil = 0
         self.mruIdx = None
+        self.instrManager = instrManager
 
         # Define category based on func unit of operator
         # TODO
@@ -93,3 +94,27 @@ class CDC6600Instr():
         newDesc = ",".join(setRegs)
         self.descRegisters = newDesc
 
+    # Remove current instruction from its manager
+    def removeFromMan(self):
+        for key,val in self.instrManager.instrDict.items():
+            if val == self:
+                self.instrManager.instrDict[key] = None
+
+    def replaceInMan(self,newInstr):
+        for key,val in self.instrManager.instrDict.items():
+            if val == self:
+                self.instrManager.instrDict[key] = newInstr
+                self.instrManager.instrInOthers[key] = True
+
+    def updateManIdx(self,idx):
+        if self.instrManager.manageType != "OPERATIONS":
+            for key, val in self.instrManager.instrDict.items():
+                if val == self:
+                    self.instrManager.instrDictIdxs[key] = idx
+        else:
+            # Get operator type
+            for key, val in self.instrManager.opDict.items():
+                # Get operator occurances
+                for idx,entry in enumerate(val):
+                    if entry == self:
+                        self.instrManager.opDictIdx[key][idx] = idx
