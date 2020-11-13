@@ -29,7 +29,7 @@ if __name__ == "__main__":
     xinput = 2
     # inputVector = [1,2,3,4,5] # TODO
     inputMode = "SCALAR"
-    testInput = "Y = AXS + BX"
+    testInput = "Y = AXS + BX + C"
     # testInput = "Y = AXS + BX + C"
     # testInput = "AX^2 + BX + C (Vector)" # TODO
     scalarValues = {"A": 1, "B": 2, "C": 3}

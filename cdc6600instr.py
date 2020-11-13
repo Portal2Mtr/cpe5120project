@@ -102,15 +102,17 @@ class CDC6600Instr():
 
     def replaceInMan(self,newInstr):
         for key,val in self.instrManager.instrDict.items():
-            if val == self:
-                self.instrManager.instrDict[key] = newInstr
-                self.instrManager.instrInOthers[key] = True
+            if val is not None:
+                if val == self:
+                    self.instrManager.instrDict[key] = newInstr
+                    self.instrManager.instrInOthers[key] = True
 
     def updateManIdx(self,idx):
         if self.instrManager.manageType != "OPERATIONS":
             for key, val in self.instrManager.instrDict.items():
-                if val == self:
-                    self.instrManager.instrDictIdxs[key] = idx
+                if val is not None:
+                    if val.varName == self.varName:
+                        self.instrManager.instrDictIdxs[key] = idx
         else:
             # Get operator type
             for key, val in self.instrManager.opDict.items():
@@ -118,3 +120,6 @@ class CDC6600Instr():
                 for idx,entry in enumerate(val):
                     if entry == self:
                         self.instrManager.opDictIdx[key][idx] = idx
+
+    def __eq__(self, other):
+        return str(other.instrManager) == str(self.instrManager) and other.varName == self.varName
