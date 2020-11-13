@@ -84,8 +84,7 @@ class CDC6600Instr():
         self.leftOpIdx = leftIdx
         self.rightOpIdx = rightIdx
 
-    def __str__(self):
-        return self.varName
+
 
     def removeDescDuplicates(self):
         origDesc = self.descRegisters
@@ -120,6 +119,9 @@ class CDC6600Instr():
                 for idx,entry in enumerate(val):
                     if entry == self:
                         self.instrManager.opDictIdx[key][idx] = idx
+
+    def __str__(self):
+        return self.varName
 
     def __eq__(self, other):
         return str(other.instrManager) == str(self.instrManager) and other.varName == self.varName

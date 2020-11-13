@@ -59,6 +59,7 @@ def checkDataDepend(self, instr):
     return 0
 
 def performArithmetic(self, instr):
+    # TODO Change to using instruction managers
 
     # Sum all operator instructions
     outputVal = 0
@@ -98,9 +99,9 @@ def performArithmetic(self, instr):
     instr.value = varDict['Y']
 
 def generateTimes(self, instr):
-    # TODO compute output times based on instruction category
-    # TODO Main simulation loop will go here!
-    instrIdx = self.instrList.index(instr)
+
+    instrIdx = self.genTimeIdx
+    self.genTimeIdx += 1
     if instrIdx == 0:
         instr.timeDict['issueTime'] = 1
         self.currWordTimes[instr.currWord] = 1

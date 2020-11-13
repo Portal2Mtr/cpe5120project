@@ -83,6 +83,8 @@ class CDC6600System():
         else:
             self.compInstrVector = {} # TODO Implement vector support
 
+        self.genTimeIdx = 0
+
     # Move functions to separate files for cleaner editing
     from cdc6600score import parseAndSort,eqnAndRegisters
     from cdc6600instrpipe import performArithmetic,generateTimes,\
@@ -165,5 +167,6 @@ class CDC6600System():
         # Generate instruction equation and description from
         self.eqnAndRegisters(instr)
         self.createDesc(instr)
+        # TODO Incorporate managers into genTimes
         self.generateTimes(instr)
         self.cleanUpTimes(instr)
