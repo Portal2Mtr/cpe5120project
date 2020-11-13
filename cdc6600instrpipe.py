@@ -47,7 +47,7 @@ def checkDataDepend(self, instr):
         currStartTime = oldStartTime
         for line in self.instrList:
             if line.operator is not None:
-                if line.timeDict['resultTime'] > currStartTime:  # TODO Temporary, won't work with vector loops
+                if line.timeDict['resultTime'] > currStartTime:
                     currStartTime = line.timeDict['resultTime']
                     if not hasLogged:
                         hasLogged = True
@@ -60,7 +60,6 @@ def checkDataDepend(self, instr):
     return 0
 
 def performArithmetic(self, instr):
-    # TODO Change to using instruction managers
 
     # Sum all operator instructions
     compOps = self.compDict['OPS'].mangOps
@@ -95,7 +94,7 @@ def performArithmetic(self, instr):
                 alreadyVal = list(compress(compute,calcCheck))[0]
                 opIdx = compute.index(alreadyVal)
                 if opIdx == 0:
-                    runningVal = self.ops[key](workComps[1],runningVal) # TODO int + object doesnt work
+                    runningVal = self.ops[key](workComps[1],runningVal)
                 else:
                     runningVal = self.ops[key](workComps[0], runningVal)
             else:

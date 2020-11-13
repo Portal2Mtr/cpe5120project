@@ -1,9 +1,6 @@
 from cdc6600instr import CDC6600Instr
 import operator
 
-
-
-# TODO Create subclasses for better organization?
 # Class for handling keeping track of each component's timing in the CDC 6600 system
 class CDC6600System():
 
@@ -37,7 +34,7 @@ class CDC6600System():
             "*":"MULTIPLY"
         }
         self.funcUnits = {
-            "FLADD":3,
+            "FLADD":4,
             "MULTIPLY1":10,
             "MULTIPLY2":10,
             "DIVIDE":29,
@@ -78,7 +75,7 @@ class CDC6600System():
 
         # Used for keeping track of complex instruction objects
         if inputMode == "SCALAR":
-            # Assume one of each type TODO add more?
+            # Assume one of each type
             self.compDict = {'SQU':None,'SCA':None,'CON':None,'OPS':None,'OUT':None}
         else:
             self.compInstrVector = {} # TODO Implement vector support
@@ -167,6 +164,5 @@ class CDC6600System():
         # Generate instruction equation and description from
         self.eqnAndRegisters(instr)
         self.createDesc(instr)
-        # TODO Incorporate managers into genTimes
         self.generateTimes(instr)
         self.cleanUpTimes(instr)

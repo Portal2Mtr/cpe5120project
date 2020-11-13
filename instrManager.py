@@ -96,16 +96,26 @@ class instrManager():
                     break
 
         self.system.opRegIdx += 1
+
+        # Get instr object from manager
+
         if instr.operator == '+': # Check if last addition, if so output to X7 if x6 is full
-            if self.system.instrList.index(instr) + 1 == (len(self.system.instrList) - 1):
+
+            if self.system.instrList[-2] is instr:
                 # Last addition
                 if self.system.opRegIdx > 1: # Assignment for x6 has passed
                     opAddr = 'X7'
 
             else:
                 opAddr = self.system.opRegsList[self.system.opRegIdx]
+                # Reuse scalar assignment register
         else:
-            opAddr = self.system.opRegsList[self.system.opRegIdx]
+            # Check if this is scalar multiple, if so reuse assignment register
+            if self.manageType == "SCALAR":
+                reuseMem = 'X' + self.instrDict['assign2'].instrRegs['result'][-1]
+                opAddr = reuseMem
+            else:
+                opAddr = self.system.opRegsList[self.system.opRegIdx]
         opAddrIdx = int(opAddr[-1])
         instr.outputAddrIdx = opAddrIdx
         instr.instrRegs['result'] = opAddr
@@ -163,7 +173,7 @@ class instrManager():
                             self.instrDictIdxs[key] = idx
         else:
             for key, group in self.opDict.items():
-                instr = group[0] # TODO Temp
+                instr = group[0]
                 idxs = [idx for idx,entry in enumerate(instrList) if entry == instr]
                 self.opDictIdx[key] = idxs
 
@@ -211,7 +221,6 @@ class instrManager():
                     rightIdx = rightMang[0].getOutputIdx()
                     currWorkInstr.assignOpVarIdx(leftIdx, rightIdx)
                 else: # rightopidx is from previous comp calc
-                    # TODO Does this work?
                     currWorkInstr = compOpList[idx]
                     leftIdx = leftMang[0].getOutputIdx()
                     rightMang = [val for key, val in mangDict.items() if val.compInstr == currWorkOps[1]]

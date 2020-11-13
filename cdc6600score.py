@@ -8,15 +8,12 @@ def parseAndSort(self, command="Y = A + B + C", values={"A": 1, "B": 2, "C": 3},
     # Organize/sort instructions
     outputVar = brokenInput[0]
     sepIdx = brokenInput.index("=")
-    inputs = brokenInput[(sepIdx + 1):]  # TODO add other special operators as inputs
+    inputs = brokenInput[(sepIdx + 1):]
     inputVars = [c for c in inputs if c.isalpha()]
     specials = [c for c in inputs if not c.isalpha()]
     print("Setting up instructions...")
     # Setup instruction list
-
-
     # Sort separated inputs based on type and create managers for handling instruction output order.
-    # TODO Add support for more?
     for entry in inputVars:
         if len(entry) == 1:
             self.compDict['CON'] = instrManager(compInstr=entry,manageType='CONSTANT',system=self)
@@ -197,6 +194,11 @@ def parseAndSort(self, command="Y = A + B + C", values={"A": 1, "B": 2, "C": 3},
             if val.instrDict['output'] is not None:
                 instrList.append(val.instrDict['output'])
 
+    # Conduct final sorting, get more optimized output table
+    # Determine equation mode (constant or not)
+
+    instrList = optimizeList(instrList,inputVars)
+
     # Add indices to managers, instruction list should be complete and ordered!
 
     # Update indices for fetch/store managers
@@ -227,76 +229,16 @@ def parseAndSort(self, command="Y = A + B + C", values={"A": 1, "B": 2, "C": 3},
         else:
             byteCnt += 1
 
-        if byteCnt > 4:
+        instr.currWord = "N" + str(currWord)
+
+        if byteCnt >= 4:
             currWord += 1
             byteCnt = 0
 
-        instr.currWord = "N" + str(currWord)
-
     self.instrList = instrList
-
-    # Link operation instructions together
-    # Get linked instruction variables from input equation
-
-    # for idx, entry in enumerate(opIter):
-    #     # Get linked variables from sorted input for operator
-    #     try:  # Check if operator is in basic equation, otherwise it is in variable operation
-    #         opIdx = brokenInput.index(entry[0])  # TODO Fix using brokeninput
-    #         rightVar = brokenInput[opIdx + 1]
-    #         leftVar = brokenInput[opIdx - 1]
-    #
-    #
-    #     except (ValueError):  # Operator is in variable input
-    #         # TODO Add support for additional x var operations?
-    #         if "s" not in entry:
-    #             if entry[-1].isnumeric():
-    #                 # TODO is divided between mutliple comp units
-    #                 workInstr = compInstr[compIdx]
-    #                 scalar = workInstr[0]
-    #                 compIdx += 1
-    #                 variable = workInstr[1]
-    #                 leftVar = scalar
-    #                 rightVar = variable
-    #
-    #             else:
-    #                 workInstr = compInstr[compIdx]
-    #                 scalar = workInstr[0]
-    #                 variable = workInstr[1]
-    #                 leftVar = scalar
-    #                 rightVar = variable
-    #         else:  # x^2
-    #             workInstr = compInstr[compIdx]
-    #             variable = workInstr[1]
-    #             leftVar = variable
-    #             rightVar = variable
-    #
-    #     leftIdx = 0
-    #     rightIdx = 0
-    #     for idx, instr in enumerate(instrList):  # Won't work for multiple vars with same name
-    #         if rightVar is instr.getVar():
-    #             rightIdx = idx
-    #
-    #         if leftVar is instr.getVar():
-    #             leftIdx = idx
-    #
-    #         # if len(instr.getVar()) > 1:
-    #         #     #Complex output
-    #
-    #     for instr in instrList:
-    #         if entry is instr.getVar():
-    #             instr.assignOpVarIdx(leftIdx, rightIdx)
-    #             outputIdx = instrList.index(instr)
-    #             instrList[leftIdx].eqnOutputIdx = outputIdx  # TODO Does this work with multiple X queries?
-    #             instrList[rightIdx].eqnOutputIdx = outputIdx
-    #             break
 
     return instrList
     ###################################
-
-
-
-
-
 
 def eqnAndRegisters(self,instr):
 
@@ -321,14 +263,12 @@ def eqnAndRegisters(self,instr):
         return
 
     if instr.category == "STORE":
-        print("TODO")
         memAddr = self.getEmptyAddr()
         memAddrIdx = int(memAddr[-1])
         instr.outputAddrIdx = memAddrIdx
         # instr.instrRegs['result'] = memAddr
         instr.instrRegs['leftOp'] = memAddr
         self.setAddrByIdx(memAddr, self.instrList.index(instr))
-        # TODO Different for vector operations
         # Get most recently used operator and its output
 
         recentOp = self.instrList[self.instrList.index(instr) - 1]
@@ -358,96 +298,50 @@ def eqnAndRegisters(self,instr):
     instr.descRegisters = instr.instrRegs['leftOp'] + "," + instr.instrRegs['rightOp'] \
                           + "," + instr.instrRegs['result']
     instr.removeDescDuplicates()
-
-
-    # # For operations, use priority list
-    # if instr.operator == '+':
-    #     # Check if last addition
-    #     selfIdx = self.instrList.index(instr)
-    #     lastPlus = True
-    #     for i in range(selfIdx+1,len(self.instrList)):
-    #         if self.instrList[i].getVar == "+":
-    #             lastPlus = False
-    #
-    #     if lastPlus: # Output to 7
-    #         temp = 0
-    #         opAddr = self.opRegsList[-1]
-    #         opAddrIdx = int(opAddr[-1])
-    #         instr.outputAddrIdx = opAddrIdx
-    #         instr.instrRegs['result'] = opAddr
-    #         self.opRegs[opAddr] = self.instrList.index(instr)
-    #
-    #     else: # Regular output
-    #         self.opRegIdx += 1
-    #         opAddr = self.opRegsList[self.opRegIdx]
-    #         opAddrIdx = int(opAddr[-1])
-    #         instr.outputAddrIdx = opAddrIdx
-    #         instr.instrRegs['result'] = opAddr
-    #         self.opRegs[opAddr] = self.instrList.index(instr)
-    # else:
-    #     self.opRegIdx += 1
-    #     opAddr = self.opRegsList[self.opRegIdx]
-    #     opAddrIdx = int(opAddr[-1])
-    #     instr.outputAddrIdx = opAddrIdx
-    #     instr.instrRegs['result'] = opAddr
-    #     self.opRegs[opAddr] = self.instrList.index(instr)
-    #
-    # # Operation Insruction
-    # # TODO May not work for vector operations
-    # leftAddr = self.instrList[instr.leftOpIdx].instrRegs['result']
-    # rightAddr = self.instrList[instr.rightOpIdx].instrRegs['result']
-    # # Update instruction list entry with previously computed indicator to manage dependancies registers
-    # if self.instrList[instr.leftOpIdx].eqnOutputIdx != self.instrList[instr.rightOpIdx].eqnOutputIdx:
-    #     if self.instrList[instr.leftOpIdx].eqnOutputIdx > self.instrList[instr.rightOpIdx].eqnOutputIdx:
-    #         self.instrList[instr.leftOpIdx].hadComp = True
-    #         self.instrList[instr.leftOpIdx].prevCompIdxs.append(self.instrList.index(instr))
-    #     else:
-    #         self.instrList[instr.rightOpIdx].hadComp = True
-    #         self.instrList[instr.rightOpIdx].prevCompIdxs.append(self.instrList.index(instr))
-    # else:
-    #     if self.instrList[instr.leftOpIdx].hadComp:
-    #         prevCompIdx = self.instrList[instr.leftOpIdx].prevCompIdxs[0] # TODO Will not work for multiple adds
-    #         leftAddr = self.instrList[prevCompIdx].instrRegs["result"]
-    #
-    #     if self.instrList[instr.rightOpIdx].hadComp:
-    #         prevCompIdx = self.instrList[instr.rightOpIdx].prevCompIdxs[0]  # TODO Will not work for multiple adds
-    #         leftAddr = self.instrList[prevCompIdx].instrRegs["result"]
-    #
-    # if "X" in [self.instrList[instr.leftOpIdx].getVar(),self.instrList[instr.rightOpIdx].getVar()]:
-    #     xinstr = [i for i in self.instrList if i.getVar() == "X"][0] # Only one register, wont work for vectors
-    #     if xinstr.mruIdx is not None:
-    #         # X has been used in previous calculation, use that register as input for this calculation
-    #         if "X" == self.instrList[instr.leftOpIdx].getVar():
-    #             leftAddr = self.instrList[xinstr.mruIdx].instrRegs['result']
-    #         else:
-    #             # Check if in squared form, if not then use original x value
-    #             if instr.varName[-1] == '2':
-    #                 # Not in squared form, use original x register
-    #                 rightAddr = xinstr.instrRegs['result']
-    #             else:
-    #                 rightAddr = self.instrList[xinstr.mruIdx].instrRegs['result']
-    #     else:
-    #         xinstr.mruIdx = self.instrList.index(instr)
-    #
-    # # leftOutput = self.instrList[instr.leftOpIdx].eqnOutputIdx
-    # # rightOutput = self.instrList[instr.rightOpIdx].eqnOutputIdx
-    # # Check for previous computation
-    #
-    # if "+" in instr.varName:
-    #
-    #     instr.instrRegs['leftOp'] = 'X' + self.opRegsList[self.opRegIdx -1][-1]
-    #     instr.instrRegs['rightOp'] = 'X' + self.opRegsList[self.opRegIdx - 2][-1]
-    #
-    #     # TODO Manage +2
-    # else:
-    #     instr.instrRegs['leftOp'] = "X" + leftAddr[-1]
-    #     instr.instrRegs['rightOp'] = "X" + rightAddr[-1]
-    # instr.instrRegs['operand'] = instr.operator
-    # instr.genEqn()
-    # instr.descRegisters = instr.instrRegs['leftOp'] + "," + instr.instrRegs['rightOp'] \
-    #                       + "," + instr.instrRegs['result']
-    # instr.removeDescDuplicates()
-
     return
+
+def optimizeList(instrList, inputVars):
+    if len(inputVars) == 2:
+        preferredOrder = ['X', 'A', '*s', '*1', 'B', '*2', '+', 'Y']
+        oldOrder = [i.varName for i in instrList]
+        # Assign enum to multiply
+        enum = 1
+        for idx, entry in enumerate(oldOrder):
+            if entry == "*":
+                oldOrder[idx] = entry + str(enum)
+                enum += 1
+        oldIdxs = [i for i in range(len(oldOrder))]
+        # Resort
+        newIdxs = []
+        for idx, entry in enumerate(preferredOrder):
+            jdx = oldOrder.index(entry)
+            newIdxs.append(oldIdxs[jdx])
+        instrList = [instrList[i] for i in newIdxs]
+
+    else:
+        preferredOrder = ['X', 'A', '*s', '*1', 'B', 'C', '*2', '+1', '+2', 'Y']
+        oldOrder = [i.varName for i in instrList]
+        # Assign enum to multiply
+        multenum = 1
+        addenum = 1
+        for idx, entry in enumerate(oldOrder):
+            if entry == "*":
+                oldOrder[idx] = entry + str(multenum)
+                multenum += 1
+            if entry == "+":
+                oldOrder[idx] = entry + str(addenum)
+                addenum += 1
+
+        oldIdxs = [i for i in range(len(oldOrder))]
+        # Resort
+        newIdxs = []
+        for idx, entry in enumerate(preferredOrder):
+            jdx = oldOrder.index(entry)
+            newIdxs.append(oldIdxs[jdx])
+        instrList = [instrList[i] for i in newIdxs]
+
+    return instrList
+
+
 
 

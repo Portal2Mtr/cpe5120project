@@ -37,7 +37,7 @@ class CDC6600Instr():
         if self.operator is not None:
             self.category = system.getFuncFromOp(self.operator)
 
-        # All nonfunctional unit instructions are long, all functioinal units are short
+        # All nonfunctional unit instructions are long, all functional units are short
         longCats = ["FETCH","STORE"]
         if self.category in longCats:
             self.instrType = "LONG"
@@ -119,6 +119,8 @@ class CDC6600Instr():
                 for idx,entry in enumerate(val):
                     if entry == self:
                         self.instrManager.opDictIdx[key][idx] = idx
+
+
 
     def __str__(self):
         return self.varName
