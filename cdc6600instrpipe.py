@@ -1,4 +1,5 @@
 # Functions representing instruction pipe computations
+from itertools import compress
 
 def createDesc(self, instr):
     if (instr.category == "FETCH"):
@@ -62,44 +63,52 @@ def performArithmetic(self, instr):
     # TODO Change to using instruction managers
 
     # Sum all operator instructions
-    outputVal = 0
-    instrDict = {}
-    varDict = {}
-    btwnInstr = {} # TODO Only supports addition, will need to parse other operators from equation
+    compOps = self.compDict['OPS'].mangOps
     alreadyCalc = []
-    for idx, entry in enumerate(self.instrList):
-        if entry.operator is None:
-            varDict[entry.varName] = entry.value
-            if entry.varName == 'X':
-                varDict['oldX'] = entry.value
-            # outputVal = self.ops[entry.operator](outputVal, self.instrList[entry.rightOpIdx].value)
-        else:
-            instrDict[entry.varName] = [entry.operator, self.instrList[entry.leftOpIdx].varName,
-                                        self.instrList[entry.rightOpIdx].varName]
+    allComps = []
+    allCompsOps = []
+    runningVal = 0
 
-    # TODO Setup splitting of X calculations between original and squared X versions
+    # Get comp instrs
+    for key,val in self.compDict.items():
+        if val is not None:
+            if val.manageType != "OPERATIONS" and val.compInstr != 'Y':
+                allComps.append(val)
+                allCompsOps.append(val.compInstr)
 
-    varDict['Y'] = 0
-    for key,values in instrDict.items():
-        if key == "+":
-            continue # Already summing Y
-        leftOp =varDict[values[1]]
-        rightOp = varDict[values[2]]
-        if key[-1] == "2": # Calculating BX
-            outputVal = self.ops[values[0]](leftOp, varDict['oldX'])
-        else:
-            outputVal = self.ops[values[0]](leftOp, rightOp)
-        if values[1] == values[2]: # Squaring
-            varDict[values[1]] = outputVal
-        else:
-            varDict['Y'] += outputVal
-            alreadyCalc.append(values[1])
-            alreadyCalc.append(values[2])
+    # Get operators from operations manager and compute
+    for key,op in self.compDict['OPS'].mangOps.items():
+        for jdx,compute in enumerate(op):
+            compIdxs = []
+            for compName in compute:
+                compIdxs.append(allCompsOps.index(compName))
 
-    instr.value = varDict['Y']
+            workComps = [allComps[i] for i in compIdxs]
+
+            # Check if already calced, if so use runningVal
+            calcCheck = []
+            for entry in compute:
+                calcCheck.append(entry in alreadyCalc)
+
+            if True in calcCheck:
+                # Get index of already calculated
+                alreadyVal = list(compress(compute,calcCheck))[0]
+                opIdx = compute.index(alreadyVal)
+                if opIdx == 0:
+                    runningVal = self.ops[key](workComps[1],runningVal) # TODO int + object doesnt work
+                else:
+                    runningVal = self.ops[key](workComps[0], runningVal)
+            else:
+                # Get manager by var
+                runningVal += self.ops[key](workComps[0],workComps[1])
+                alreadyCalc.extend(compute)
+                print("Success")
+
+    instr.value = runningVal
 
 def generateTimes(self, instr):
 
+    # Index by separate counter, instruction list indexes comp operations incorrectly for some reason
     instrIdx = self.genTimeIdx
     self.genTimeIdx += 1
     if instrIdx == 0:
@@ -116,8 +125,6 @@ def generateTimes(self, instr):
         else:
             instr.timeDict['issueTime'] = self.wordWait + self.currWordTimes[self.instrList[instrIdx - 1].currWord]
             self.currWordTimes[instr.currWord] = instr.timeDict['issueTime']
-
-        # TODO fillout conditions
 
     # Get timing offset for managing resource conflicts
     instr.timeDict['startTime'] = instr.timeDict['issueTime'] + \

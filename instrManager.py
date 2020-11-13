@@ -52,8 +52,10 @@ class instrManager():
         return self.manageType
 
     def computeCalc(self):
+        # Perform all calculations here
         if self.manageType == "SCALAR":
-            return self.instrDict['assign1'].value * self.instrDict['scalMult'].value
+            self.instrDict['scalMult'].value = self.instrDict['assign1'].value * self.instrDict['assign2'].value
+            return self.instrDict['scalMult'].value
         elif self.manageType == "SQUARE":
             return self.instrDict['assign1'].value * self.instrDict['assign1'].value * self.instrDict['assign2'].value
         elif self.manageType == 'OUTPUT':
@@ -84,11 +86,6 @@ class instrManager():
                     retList.append(instr)
 
             return retList
-
-    def getOutputReg(self):
-        temp = 0
-        print("TODO")
-        # TODO
 
     def genOpEqn(self,instr):
 
@@ -188,9 +185,17 @@ class instrManager():
             if 1 not in opLens: # Check if working with constant
                 currWorkInstr = compOpList[idx]
                 alreadyCalc.extend(currWorkOps)
-                leftMang = [val for key,val in mangDict.items() if val.compInstr == currWorkOps[0]]
+                leftMang = []
+                rightMang = []
+                for key,val in mangDict.items():
+                    if val is not None:
+                        if val.compInstr == currWorkOps[0]:
+                            leftMang.append(val)
+                for key,val in mangDict.items():
+                    if val is not None:
+                        if val.compInstr == currWorkOps[1]:
+                            rightMang.append(val)
                 leftIdx = leftMang[0].getOutputIdx()
-                rightMang = [val for key, val in mangDict.items() if val.compInstr == currWorkOps[1]]
                 rightIdx = rightMang[0].getOutputIdx()
                 currWorkInstr.assignOpVarIdx(leftIdx,rightIdx)
             else:
@@ -215,7 +220,10 @@ class instrManager():
 
 
     def __add__(self, other):
-        return self.computeCalc() + other.computeCalc()
+        if type(other) == instrManager:
+            return self.computeCalc() + other.computeCalc()
+        elif type(other) == int:
+            return self.computeCalc() + other
 
     def __sub__(self, other):
         return self.computeCalc() - other.computeCalc()
