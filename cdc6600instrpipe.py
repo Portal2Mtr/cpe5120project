@@ -36,8 +36,8 @@ def checkDataDepend(self, instr):
 
         if currStartTime != oldStartTime:
             instrIdx = self.instrList.index(instr)
-            print("Data dependancy at instr idx %s!" % instrIdx)
-            self.dataDeps.append(instrIdx)
+            print("Data dependancy at instruction line %s!" % (instrIdx+1))
+            self.dataDeps.append(instrIdx + 1)
 
         return currStartTime - oldStartTime
 

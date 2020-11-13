@@ -1,9 +1,18 @@
 
 class instrManager():
+    """
+    Manager object for handling interinstruction calculations. Greatly simplifies instrcution
+    indexing and calculation handling.
+    """
 
     def __init__(self,compInstr,manageType,system):
-        temp = 0
-        # types=["SCALAR","SQUARE","CONSTANT","OUTPUT","OPERATIONS"]
+        """
+        Constructor for instruction manager
+        :param compInstr: Complex instruciton to refer to the manager by.
+        :param manageType: Type of manager
+        :param system: CDC 6600/7600 system.
+        """
+        # Manager types = ["SCALAR","SQUARE","CONSTANT","OUTPUT","OPERATIONS"]
         self.manageType = manageType
         self.compInstr = compInstr
         self.system = system
@@ -16,9 +25,14 @@ class instrManager():
         self.opDict = {}
         self.opDictIdx = {}
         self.mangOps = {}
+        # Output calculation value
         self.calcVal = 0
 
-    def getOutputIdx(self,opCalc=None):
+    def getOutputIdx(self):
+        """
+        Gets the output register for a given type of input instruction.
+        :return: Output register.
+        """
         if self.manageType == "SCALAR":
             return self.instrDictIdxs['scalMult']
         elif self.manageType == "SQUARE":
@@ -32,13 +46,13 @@ class instrManager():
             return self.instrDictIdxs['assign1']
 
     def addInstr(self,instr,key):
+        """
+        Add instruction to manager
+        :param instr: Input instruction
+        :param key: Key for instruction dictionary
+        :return:
+        """
         self.instrDict[key] = instr
-
-    def assignIdx(self,instr,idx):
-        for key,value in self.instrDict.items():
-            if value == instr:
-                self.instrDictIdxs[key] = idx
-                return
 
     def getInstrOrder(self):
         returnList = []
@@ -51,7 +65,29 @@ class instrManager():
     def __str__(self):
         return self.manageType
 
+    def calcOutput(self,outputVal):
+        self.instrDict['output'].value = outputVal
+
+    def getOutputVal(self):
+        return self.instrDict['output'].value
+
+
+    def assignIdx(self,instr,idx):
+        """
+        Assign an instruction in the manager a given index.
+        :param instr: Input instruction
+        :param idx: Input index.
+        """
+        for key,value in self.instrDict.items():
+            if value == instr:
+                self.instrDictIdxs[key] = idx
+                return
+
     def computeCalc(self):
+        """
+        Computes the calculated value for the managers type.
+        :return: Integer value with correct calculations.
+        """
         # Perform all calculations here
         if self.manageType == "SCALAR":
             self.instrDict['scalMult'].value = self.instrDict['assign1'].value * self.instrDict['assign2'].value
@@ -63,14 +99,11 @@ class instrManager():
         else:
             return self.instrDict['assign1'].value
 
-    def calcOutput(self,outputVal):
-        self.instrDict['output'].value = outputVal
-
-    def getOutputVal(self):
-        return self.instrDict['output'].value
-
-    # Get all operation instructions associated with manager
     def getOps(self):
+        """
+        Get all operation instructions associated with manager
+        :return: Operation instruction list.
+        """
         if self.manageType != "OPERATIONS":
             retList = []
             opsList = ['square','scalMult']
@@ -88,6 +121,11 @@ class instrManager():
             return retList
 
     def genOpEqn(self,instr):
+        """
+        Generate operation equation from operation index.
+        :param instr:
+        :return:
+        """
 
         for key,val in self.instrDict.items():
             if val is not None:
@@ -98,7 +136,6 @@ class instrManager():
         self.system.opRegIdx += 1
 
         # Get instr object from manager
-
         if instr.operator == '+': # Check if last addition, if so output to X7 if x6 is full
 
             if self.system.instrList[-2] is instr:
@@ -134,9 +171,12 @@ class instrManager():
         instr.instrRegs['rightOp'] = rightAddr
         instr.instrRegs['operand'] = instr.operator
 
-
-    # Generate left/right idxs from instruction list for equation generation from within manager
     def linkInstr(self,instr):
+        """
+         Generate left/right idxs from instruction list for equation generation from within manager
+        :param instr: Input instruction
+        :return:
+        """
 
         for key,val in self.instrDict.items():
             if val is not None:
@@ -161,8 +201,12 @@ class instrManager():
             rightOpIdx = self.instrDictIdxs['assign2']
             workInstr.assignOpVarIdx(leftOpIdx, rightOpIdx)
 
-
     def updateIdxs(self,instrList):
+        """
+        Update the indices within the manager with those in the instruction list.
+        :param instrList:
+        :return:
+        """
 
         if self.manageType != "OPERATIONS":
             for key,instr in self.instrDict.items():
@@ -178,11 +222,17 @@ class instrManager():
                 self.opDictIdx[key] = idxs
 
     def getLastCalcOut(self,instrList):
+        """
+        Get the
+        :param instrList:
+        :return:
+        """
         for idx,instr in enumerate(instrList):
             if instr == self.instrDict['output']:
                 lastCalcIdx = idx -1
                 instr.leftOpIdx = lastCalcIdx
-        instr.rightOpIdx = int(self.system.getEmptyMem()[-1])
+                # Get empty memory register for output
+                instr.rightOpIdx = int(self.system.getEmptyMem()[-1])
 
     def updateCompOpIdxs(self,compOpList):
         workOps = self.mangOps[compOpList[0].varName]
@@ -227,7 +277,6 @@ class instrManager():
                     rightIdx = self.opDictIdx[compOpList[0].varName][0]
                     currWorkInstr.assignOpVarIdx(leftIdx, rightIdx)
 
-
     def __add__(self, other):
         if type(other) == instrManager:
             return self.computeCalc() + other.computeCalc()
@@ -236,3 +285,6 @@ class instrManager():
 
     def __sub__(self, other):
         return self.computeCalc() - other.computeCalc()
+
+    def __str__(self):
+        return self.manageType
