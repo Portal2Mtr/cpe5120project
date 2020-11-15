@@ -1,5 +1,6 @@
 from prettytable import PrettyTable
 from cdc6600system import CDC6600System
+import sys
 
 """
     This is the CDC 6600/7600 simulation project for Anh Nguyen and Charles Rawlins.
@@ -9,51 +10,43 @@ from cdc6600system import CDC6600System
     operations, so only the two scalar input test equations are implemented.
     The program takes an input selection from the user for which equation to conduct
     tests with. 
-
 """
 
-
-def get_input_eqn():
+def getInputEqn():
     """
-    Creates a dialogue with the user to generate the input equation for simulation
+        Creates a dialogue with the user to generate the input equation for simulation
 
-    :return: xinput (Value for x variable), selEqn (Equation selected from list)
+        :return: xinput (Value for x variable), selEqn (Equation selected from list)
     """
-
-    # Two scalar equations to test for each system, vectors could not be implemented due to
-    # time constraints
     eqns = ["Y = AX^2 + BX","Y = AX^2 + BX + C"]
 
     print("Select equation to test:")
     for idx, entry in enumerate(eqns):
         print(str(idx+1) +": " +entry)
 
-    # Parse input from the user
     eqnSel = int(input("Selection:"))
     eqnIdx = eqnSel - 1
     selEqn = eqns[eqnIdx]
-    selEqn = selEqn.replace("^2","S") # System recognizes squaring via S, not '^2'
 
-    # Get X Variable value form user
+    selEqn = selEqn.replace("^2","S")
     xinput = int(input("Enter value for X:"))
+
     return xinput,selEqn
 
 
 if __name__ == "__main__":
     """
-    Main function for conducting simulation. Input equations were tested using
-    Python 3.8.
+        Main function for conducting simulation. Input equations were tested using
+        Python 3.8.
     """
-    # Friendly message to the user
     print("Welcome! This program simulates the timing diagrams for\n"
-          "the CDC6600/7600 systems! Please select your input equation.\n"
-          "NOTE: Vectors are not supported for this version of the project.")
+          "the CDC6600/7600 systems! Please select your input equation.")
 
     # Generate System object for generating timing diagram
-    xinput,selEqn = get_input_eqn()
+    xinput,selEqn= getInputEqn()
 
     # Constant values for equation calculations can be manipulated here.
-    constValues = {"A": 1, "B": 2, "C": 3}
+    scalarValues = {"A": 1, "B": 2, "C": 3}
     cdc6600 = CDC6600System()
 
     # Get input and parse instuctions
@@ -62,8 +55,9 @@ if __name__ == "__main__":
 
     # Parse input and create ordered instruction list
     instrList = cdc6600.creatInstrList(command=selEqn,
-                                       values=constValues,
-                                       varInput=xinput)
+                                       values=scalarValues,
+                                       varInput=xinput,
+                                       system=cdc6600)
 
     # 'Run' instructions and generate timing output
     print("Computing instructions for CDC 6600...")
@@ -77,7 +71,7 @@ if __name__ == "__main__":
     print("Creating table for CDC 6600...")
     # TODO Add colors to instruction conflicts
     x = PrettyTable()
-    x.field_names = ["Instr. #", "Word #","Eqn.","Desc.", "Instr. Type","Issue","Start",
+    x.field_names = ["Word #","Eqn.","Desc.", "Instr. Type","Issue","Start",
                      "Result","Unit Ready","Fetch","Store","Func. Unit","Registers"]
     for instr in instrList:
         x.add_row(instr.getDesc())
@@ -91,15 +85,15 @@ if __name__ == "__main__":
     # Print out performance analysis with resource conflicts
     print("---------------------------------------------------")
     if len(cdc6600.hardDeps) > 0:
-        print("Hardware resource conflicts  at lines:")
+        print("Hardware resource conflicts at line(s):")
         print(str(cdc6600.hardDeps))
     else:
         print("No detected hardware conflicts!")
     if len(cdc6600.dataDeps) > 0:
-        print("Data resource conflicts at lines:")
+        print("Data resource conflicts at line(s):")
         print(str(cdc6600.dataDeps))
     else:
-        print("No detected data dependancies!")
+        print("No detected data dependencies!")
     print("---------------------------------------------------")
 
     #TODO Add table generation for CDC 7600
