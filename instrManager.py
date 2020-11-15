@@ -61,6 +61,10 @@ class instrManager():
         self.instrDict[key] = instr
 
     def getInstrOrder(self):
+        """
+        Returns a list of each instruction ordered in the manager's dictionary.
+        :return: List of ordered instructions.
+        """
         returnList = []
         for key,value in self.instrDict.values():
             if value is not None:
@@ -68,13 +72,21 @@ class instrManager():
 
         return returnList
 
-    def __str__(self):
-        return self.manageType
+
 
     def calcOutput(self,outputVal):
+        """
+        Set the output of the manager's instruction dictionary to a value.
+        :param outputVal: Value for manager's dict value.
+        :return:
+        """
         self.instrDict['output'].value = outputVal
 
     def getOutputVal(self):
+        """
+        Get the output value of this manager's instruction dictionary.
+        :return:
+        """
         return self.instrDict['output'].value
 
 
@@ -241,6 +253,12 @@ class instrManager():
         instr.rightOpIdx = int(self.system.getEmptyMem()[-1])
 
     def updateCompOpIdxs(self,compOpList):
+        """
+        For each complex operation instruction (addition), correctly gives the output
+        instruction index in the instruction list for proper instruction equation
+        generation.
+        :param compOpList: List of operations using the complex instructions.
+        """
         workOps = self.mangOps[compOpList[0].varName]
         mangDict = self.system.compDict
         alreadyCalc = []
@@ -294,3 +312,4 @@ class instrManager():
 
     def __str__(self):
         return self.manageType
+

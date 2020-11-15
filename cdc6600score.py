@@ -284,7 +284,7 @@ def eqnAndRegisters(self,instr):
         return
 
     if instr.category == "STORE":
-        # Handle
+        # Handle final storing instruction
         memAddr = self.getEmptyAddr()
         memAddrIdx = int(memAddr[-1])
         instr.outputAddrIdx = memAddrIdx

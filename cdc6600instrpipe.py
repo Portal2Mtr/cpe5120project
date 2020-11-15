@@ -1,7 +1,16 @@
 # Functions representing instruction pipe computations
 from itertools import compress
 
+"""
+    Functions for CDC6600System that are normally handled by the instruction pipe. 
+"""
+
 def createDesc(self, instr):
+    """
+    Creates the time table description for a given instruction.
+    :param self: CDC6600System
+    :param instr: Instruction for description generation
+    """
     if (instr.category == "FETCH"):
         instr.catDesc = "Fetch"
         instr.instrDesc = instr.catDesc + " " + instr.varName
@@ -9,10 +18,16 @@ def createDesc(self, instr):
         instr.catDesc = "Store"
         instr.instrDesc = instr.catDesc + " " + instr.varName
     else:
-        instr.catDesc = instr.category
+        instr.catDesc = instr.category # Use fuunctional unit for description
         instr.instrDesc = instr.catDesc + " " + instr.instrRegs['leftOp'] + " " + instr.instrRegs['rightOp']
 
 def getTimeFromOp(self, category):
+    """
+    Gets the time from the given functional unit
+    :param self: CDC6600System object
+    :param category: Functional unit to get time for.
+    :return: Functional unit, time adjustment
+    """
 
     try:
         return category, self.funcUnits[category]
@@ -25,8 +40,15 @@ def getTimeFromOp(self, category):
             return "NONE", 0
 
 def checkDataDepend(self, instr):
+    """
+    Checks for data dependencies for a given instructions time table generations.
+    :param self: CDC6600System
+    :param instr: Instruction for dependency checking
+    :return: Time adjustment to wait for data to be processed.
+    """
 
     if instr.operator is not None:
+        # If operation instruction, check each instruction involved to make sure times are correct.
         currStartTime = instr.timeDict['startTime']
         oldStartTime = currStartTime
         currLeftInstr = self.instrList[instr.leftOpIdx]
@@ -35,13 +57,16 @@ def checkDataDepend(self, instr):
                             oldStartTime,currLeftInstr.busyUntil,currRightInstr.busyUntil)
 
         if currStartTime != oldStartTime:
+            # Log data dependancy
             instrIdx = self.instrList.index(instr)
             print("Data dependancy at instruction line %s!" % (instrIdx+1))
             self.dataDeps.append(instrIdx + 1)
 
+        # Return time adjustment
         return currStartTime - oldStartTime
 
     elif instr.category == "STORE":
+        # Log final data dependancy
         hasLogged = False
         oldStartTime = instr.timeDict['startTime']
         currStartTime = oldStartTime
@@ -55,11 +80,18 @@ def checkDataDepend(self, instr):
                         print("Data dependancy at instr idx %s!" % instrIdx)
                         self.dataDeps.append(instrIdx)
 
+        # Update time adjustment
         return currStartTime - oldStartTime
 
+    # No adjustment
     return 0
 
 def performArithmetic(self, instr):
+    """
+    Calculates the equation output from each of the instruction managers in the final output instruction.
+    :param self: CDC6600System
+    :param instr: Output instruction.
+    """
 
     # Sum all operator instructions
     compOps = self.compDict['OPS'].mangOps
@@ -68,15 +100,15 @@ def performArithmetic(self, instr):
     allCompsOps = []
     runningVal = 0
 
-    # Get comp instrs
     for key,val in self.compDict.items():
+        # Get comp instrs
         if val is not None:
             if val.manageType != "OPERATIONS" and val.compInstr != 'Y':
                 allComps.append(val)
                 allCompsOps.append(val.compInstr)
 
-    # Get operators from operations manager and compute
     for key,op in self.compDict['OPS'].mangOps.items():
+        # Get operators from operations manager and compute
         for jdx,compute in enumerate(op):
             compIdxs = []
             for compName in compute:
@@ -84,7 +116,7 @@ def performArithmetic(self, instr):
 
             workComps = [allComps[i] for i in compIdxs]
 
-            # Check if already calced, if so use runningVal
+            # Check if already calculated, if so use runningVal
             calcCheck = []
             for entry in compute:
                 calcCheck.append(entry in alreadyCalc)
@@ -106,6 +138,11 @@ def performArithmetic(self, instr):
     instr.value = runningVal
 
 def generateTimes(self, instr):
+    """
+    Generate the time values for the output table. Main checker for updating calculation times
+    :param self: CDC6600System
+    :param instr: Instruction for calculating time values.
+    """
 
     # Index by separate counter, instruction list indexes comp operations incorrectly for some reason
     instrIdx = self.genTimeIdx
@@ -154,7 +191,12 @@ def generateTimes(self, instr):
     # Done processing instructions and generating times!
 
 def cleanUpTimes(self, instr):
-    # Replace empty times with a dash for better visualization
+    """
+    Replace empty times with a dash for better visualization
+    :param self: CDC6600System
+    :param instr: Instruction to clean up.
+    """
+
     for key, value in instr.timeDict.items():
         if value == 0:
             instr.timeDict[key] = '-'
