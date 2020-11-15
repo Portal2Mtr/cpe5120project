@@ -4,7 +4,7 @@ import operator
 # Class for handling keeping track of each component's timing in the CDC 6600 system
 class CDC6600System():
 
-    def __init__(self,inputVar="X",showLoops=False,inputMode="SCALAR"):
+    def __init__(self,inputVar="X"):
 
         numAddr = 8
         numOp = 8
@@ -67,18 +67,13 @@ class CDC6600System():
                "-": operator.sub,
                "*":operator.mul}  # etc.
 
-        self.showLoops = showLoops
         self.inputVar = inputVar
 
         self.dataDeps = []
         self.hardDeps = []
 
         # Used for keeping track of complex instruction objects
-        if inputMode == "SCALAR":
-            # Assume one of each type
-            self.compDict = {'SQU':None,'SCA':None,'CON':None,'OPS':None,'OUT':None}
-        else:
-            self.compInstrVector = {} # TODO Implement vector support
+        self.compDict = {'SQU':None,'SCA':None,'CON':None,'OPS':None,'OUT':None}
 
         self.genTimeIdx = 0
 
