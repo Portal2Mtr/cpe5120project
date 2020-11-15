@@ -1,9 +1,8 @@
-
-from cdc6600instr import *
-from instrManager6600 import instrManager
+from cdc7600instr import *
+from instrManager7600 import instrManager
 
 """
-Functions for the CDC 6600 representing Scoreboard computations 
+Functions for the CDC 7600 representing Scoreboard computations 
 (parsing data and managing instruction meta generation).
 """
 
@@ -11,7 +10,7 @@ def parseAndSort(self, command="Y = AXS + BX + C", values={"A": 1, "B": 2, "C": 
     """
     Creates instruction objects based on input equation, no calculations or generating new data,
     which is handled in the 'compute' function.
-    :param self: CDC6600System
+    :param self: CDC7600System
     :param command: Input equation
     :param values: Constant values
     :param varInput: variable input value
@@ -52,24 +51,24 @@ def parseAndSort(self, command="Y = AXS + BX + C", values={"A": 1, "B": 2, "C": 
 
                 # Setup Fetches
                 # assign1 in variable
-                workMan.instrDict['assign1'] = CDC6600Instr(varName=var,
+                workMan.instrDict['assign1'] = CDC7600Instr(varName=var,
                                                   category="FETCH",
                                                   system=self,
                                                   value=varInput,
                                                   instrManager=workMan)
-                workMan.instrDict['assign2'] = CDC6600Instr(varName=multScal,
+                workMan.instrDict['assign2'] = CDC7600Instr(varName=multScal,
                                                   category="FETCH",
                                                   system=self,
                                                   value=values[multScal],
                                                   instrManager=workMan)
                 # Setup Operators
-                workMan.instrDict['square'] = CDC6600Instr(varName='*s',
+                workMan.instrDict['square'] = CDC7600Instr(varName='*s',
                                                  category="",
                                                  system=self,
                                                  operator='*',
                                                  instrManager=workMan)
 
-                workMan.instrDict['scalMult'] = CDC6600Instr(varName='*',
+                workMan.instrDict['scalMult'] = CDC7600Instr(varName='*',
                                                  category="",
                                                  system=self,
                                                  operator='*',
@@ -82,18 +81,18 @@ def parseAndSort(self, command="Y = AXS + BX + C", values={"A": 1, "B": 2, "C": 
                 var = varEntry[1]
                 # Setup Fetches
                 # assign1 in variable
-                workMan.instrDict['assign1'] = CDC6600Instr(varName=var,
+                workMan.instrDict['assign1'] = CDC7600Instr(varName=var,
                                                             category="FETCH",
                                                             system=self,
                                                             value=varInput,
                                                             instrManager=workMan)
-                workMan.instrDict['assign2'] = CDC6600Instr(varName=multScal,
+                workMan.instrDict['assign2'] = CDC7600Instr(varName=multScal,
                                                             category="FETCH",
                                                             system=self,
                                                             value=values[multScal],
                                                             instrManager=workMan)
                 # Setup Operators
-                workMan.instrDict['scalMult'] = CDC6600Instr(varName='*',
+                workMan.instrDict['scalMult'] = CDC7600Instr(varName='*',
                                                              category="",
                                                              system=self,
                                                              operator='*',
@@ -102,7 +101,7 @@ def parseAndSort(self, command="Y = AXS + BX + C", values={"A": 1, "B": 2, "C": 
             # No variable, constant
             workMan = self.compDict['CON']
             # Setup Fetches
-            workMan.instrDict['assign1'] = CDC6600Instr(varName=entry,
+            workMan.instrDict['assign1'] = CDC7600Instr(varName=entry,
                                                         category="FETCH",
                                                         system=self,
                                                         value=varInput,
@@ -131,7 +130,7 @@ def parseAndSort(self, command="Y = AXS + BX + C", values={"A": 1, "B": 2, "C": 
         storeOpArray = []
         storeOpArrayIdx = []
         for calc in allOpArray:
-            storeOpArray.append(CDC6600Instr(varName=entry,
+            storeOpArray.append(CDC7600Instr(varName=entry,
                                                           category="",
                                                           system=self,
                                                           instrManager=self.compDict['OPS'],
@@ -141,7 +140,7 @@ def parseAndSort(self, command="Y = AXS + BX + C", values={"A": 1, "B": 2, "C": 
         self.compDict['OPS'].opDictIdx[entry] = storeOpArrayIdx
 
     # Setup output for instruction managers
-    outputInstr = CDC6600Instr(varName=outputVar,
+    outputInstr = CDC7600Instr(varName=outputVar,
                                   category="STORE",
                                   system=self,
                                   instrManager=self.compDict["OUT"])
@@ -258,7 +257,7 @@ def parseAndSort(self, command="Y = AXS + BX + C", values={"A": 1, "B": 2, "C": 
 def eqnAndRegisters(self,instr):
     """
     Generates equations for each input instruction
-    :param self: CDC6600System
+    :param self: CDC7600System
     :param instr: Instruction to generate equation for
     :return:
     """
