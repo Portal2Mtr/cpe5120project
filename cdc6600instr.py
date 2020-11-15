@@ -113,6 +113,9 @@ class CDC6600Instr():
 
         # Remove current instruction from its manager
     def removeFromMan(self):
+        """
+        Removes this instruction (self) from its own manager. (unused)
+        """
         for key, val in self.instrManager.instrDict.items():
             if val == self:
                 self.instrManager.instrDict[key] = None

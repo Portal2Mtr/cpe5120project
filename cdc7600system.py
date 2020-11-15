@@ -108,14 +108,27 @@ class CDC7600System():
                 if self.addrRegs[i] is None:
                     return i
 
-    # Sets addr register to instruction number from instrList
     def setAddrByIdx(self,register,idx):
+        """
+        Sets addr register to instruction index number from instrList.
+        :param register: Register string for indexing.
+        :param idx: index to set address register to.
+        """
         self.addrRegs[register] = idx
 
     def setMemByIdx(self,register,idx):
+        """
+        Sets memory register to instruction index number from instrList.
+        :param register: Register string for indexing.
+        :param idx: Index to set memory address to.
+        """
         self.memRegs[register] = idx
 
     def getEmptyOp(self):
+        """
+        Gets an empty operator register from opRegs dict.
+        :return: Key of empty operator register.
+        """
         for i in self.opRegs.keys():
             if self.opRegs[i] is None:
                 return i
@@ -212,6 +225,10 @@ class CDC7600System():
         return None
 
     def updateBusyUntil(self,instr):
+        """
+        Updates the busyUntil dict which manages when functional units can be used again.
+        :param instr: Instruction for timing reference.
+        """
         category = instr.category
 
         if (category == "FETCH") or (category == "STORE"):

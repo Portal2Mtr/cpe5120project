@@ -168,15 +168,6 @@ def generateTimes(self, instr):
             instr.timeDict['issueTime'] = self.wordWait + self.currWordTimes[self.instrList[instrIdx - 1].currWord]
             self.currWordTimes[instr.currWord] = instr.timeDict['issueTime']
 
-        # if instr.operator is not None:
-        #     if not self.checkFuncUnit(instr):
-        #         # Check if functional unit is fully clear, if not then get fetchTime of last instruction
-        #         instrIdx = self.instrList.index(instr)
-        #         print("Hardware esource dependancy at instruction line %s!" % (instrIdx + 1))
-        #         self.hardDeps.append(instrIdx+1)
-        #         lastInstr = self.getLastInstrFunc(instr.category)
-        #         instr.timeDict['issueTime'] = lastInstr.timeDict['unitReadyTime']
-
     # Get timing offset for managing resource conflicts
     instr.timeDict['issueTime'] = instr.timeDict['issueTime'] + \
                                   self.checkResourceConflict(instr)
