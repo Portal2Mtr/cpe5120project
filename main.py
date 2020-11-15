@@ -2,8 +2,23 @@ from prettytable import PrettyTable
 from cdc6600system import CDC6600System
 import sys
 
+"""
+    This is the CDC 6600/7600 simulation project for Anh Nguyen and Charles Rawlins.
+    This code takes a given input string and generates two tables to stdout showing
+    the execution timing for a given equation broken down into instructions. 
+    Unfortunately, due to time restrains, this simulation does not support vector 
+    operations, so only the two scalar input test equations are implemented.
+    The program takes an input selection from the user for which equation to conduct
+    tests with. 
+"""
+
 def getInputEqn():
-    eqns = ["Y = AX^2 + BX","Y = AX^2 + BX + C","Y = AX^2 + BX (Vector)"]
+    """
+        Creates a dialogue with the user to generate the input equation for simulation
+
+        :return: xinput (Value for x variable), selEqn (Equation selected from list)
+    """
+    eqns = ["Y = AX^2 + BX","Y = AX^2 + BX + C"]
 
     print("Select equation to test:")
     for idx, entry in enumerate(eqns):
@@ -12,29 +27,29 @@ def getInputEqn():
     eqnSel = int(input("Selection:"))
     eqnIdx = eqnSel - 1
     selEqn = eqns[eqnIdx]
-    inputMode = "SCALAR"
-    if " (Vector)" in selEqn:
-        print("Vector mode is not supported! Exiting!")
-        sys.exit()
 
     selEqn = selEqn.replace("^2","S")
     xinput = int(input("Enter value for X:"))
 
-    return xinput,selEqn,inputMode
+    return xinput,selEqn
 
 
 if __name__ == "__main__":
+    """
+        Main function for conducting simulation. Input equations were tested using
+        Python 3.8.
+    """
     print("Welcome! This program simulates the timing diagrams for\n"
           "the CDC6600/7600 systems! Please select your input equation.")
 
     # Generate System object for generating timing diagram
-    xinput,selEqn,inputMode = getInputEqn()
+    xinput,selEqn= getInputEqn()
 
-    # Can manipulate values here for calculations
+    # Constant values for equation calculations can be manipulated here.
     scalarValues = {"A": 1, "B": 2, "C": 3}
-    cdc6600 = CDC6600System(inputMode=inputMode)
+    cdc6600 = CDC6600System()
 
-    ########### Get input and parse instuctions
+    # Get input and parse instuctions
     print("---------------------------------------------------")
     print("Parsing input and setting up CDC 6600 system...")
 
@@ -54,6 +69,7 @@ if __name__ == "__main__":
     print("---------------------------------------------------")
     # Create table based on in-class examples
     print("Creating table for CDC 6600...")
+    # TODO Add colors to instruction conflicts
     x = PrettyTable()
     x.field_names = ["Word #","Eqn.","Desc.", "Instr. Type","Issue","Start",
                      "Result","Unit Ready","Fetch","Store","Func. Unit","Registers"]
@@ -66,18 +82,18 @@ if __name__ == "__main__":
     outputInstr = instrList[-1]
     print("Equation Result: " +outputInstr.varName + " = " + str(outputInstr.value))
 
-    # Print out performance analysis
+    # Print out performance analysis with resource conflicts
     print("---------------------------------------------------")
     if len(cdc6600.hardDeps) > 0:
-        print("Hardware Resource Conflicts Indices:")
+        print("Hardware resource conflicts at line(s):")
         print(str(cdc6600.hardDeps))
     else:
         print("No detected hardware conflicts!")
     if len(cdc6600.dataDeps) > 0:
-        print("Data Resource Conflicts Indices:")
+        print("Data resource conflicts at line(s):")
         print(str(cdc6600.dataDeps))
     else:
-        print("No detected data dependancies!")
+        print("No detected data dependencies!")
     print("---------------------------------------------------")
 
     #TODO Add table generation for CDC 7600
