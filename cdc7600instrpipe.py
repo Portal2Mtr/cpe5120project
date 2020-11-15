@@ -163,33 +163,37 @@ def generateTimes(self, instr):
                 # Adjust time for previous short instruction
                 instr.timeDict['issueTime'] = self.shortWait + self.instrList[instrIdx - 1].timeDict['issueTime']
 
-            if instr.operator is not None and instr.instrManager.manageType == "SCALAR":
-                # Check if this is the scalar reuse instruction, if so then wait until complete execution of
-                # constant fetching
-                instr.timeDict['issueTime'] = instr.instrManager.instrDict['assign2'].timeDict['fetchTime'] + 1
-
         else:
             # Word has changed, adjust accordingly
             instr.timeDict['issueTime'] = self.wordWait + self.currWordTimes[self.instrList[instrIdx - 1].currWord]
             self.currWordTimes[instr.currWord] = instr.timeDict['issueTime']
 
-        if instr.operator is not None:
-            if not self.checkFuncUnit(instr):
-                # Check if functional unit is fully clear, if not then get fetchTime of last instruction
-                instrIdx = self.instrList.index(instr)
-                print("Hardware esource dependancy at instruction line %s!" % (instrIdx + 1))
-                self.hardDeps.append(instrIdx+1)
-                lastInstr = self.getLastInstrFunc(instr.category)
-                instr.timeDict['issueTime'] = lastInstr.timeDict['unitReadyTime']
+        # if instr.operator is not None:
+        #     if not self.checkFuncUnit(instr):
+        #         # Check if functional unit is fully clear, if not then get fetchTime of last instruction
+        #         instrIdx = self.instrList.index(instr)
+        #         print("Hardware esource dependancy at instruction line %s!" % (instrIdx + 1))
+        #         self.hardDeps.append(instrIdx+1)
+        #         lastInstr = self.getLastInstrFunc(instr.category)
+        #         instr.timeDict['issueTime'] = lastInstr.timeDict['unitReadyTime']
 
     # Get timing offset for managing resource conflicts
-    # instr.timeDict['startTime'] = instr.timeDict['issueTime'] + \
-    #                               self.checkResourceConflict(instr) # TODO
+    instr.timeDict['issueTime'] = instr.timeDict['issueTime'] + \
+                                  self.checkResourceConflict(instr)
+
     instr.timeDict['startTime'] = instr.timeDict['issueTime']
     # Update Variable and make sure its not being used by another instruction
 
     # Check if we need to wait for data dependancy
     instr.timeDict['startTime'] = instr.timeDict['startTime'] + self.checkDataDepend(instr)
+
+    if instr.operator is not None and instr.instrManager.manageType == "SCALAR":
+        # Check if this is the scalar reuse instruction, if so then wait until complete execution of
+        # constant fetching
+        instr.timeDict['startTime'] = instr.instrManager.instrDict['assign2'].timeDict['fetchTime']
+
+    # Update unit ready time after data dependancy
+    self.updateBusyUntil(instr)
 
     # 'Execute' the functional unit for output
     if instr.category == "STORE":
@@ -210,7 +214,7 @@ def generateTimes(self, instr):
     if instr.category == "FETCH":
         instr.timeDict['fetchTime'] = instr.timeDict['resultTime'] + self.fetchStoreWait
     elif instr.category == "STORE":
-        instr.timeDict['storeTime'] = instr.timeDict['unitReadyTime'] + self.fetchStoreWait
+        instr.timeDict['storeTime'] = instr.timeDict['resultTime'] + self.fetchStoreWait
 
     # Done processing instructions and generating times!
 

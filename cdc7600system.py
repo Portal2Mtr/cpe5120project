@@ -175,7 +175,7 @@ class CDC7600System():
             self.hardDeps.append(instrIdx+1)
             return self.busyUntil[category] - timing
         else:
-            self.busyUntil[category] = self.funcUnits[category] + timing + self.unitReadyWait
+            # Moving busyuntil to another function
             return 0
 
     def checkFuncUnit(self,instr):
@@ -210,6 +210,15 @@ class CDC7600System():
                         if instr.category == category:
                             return instr
         return None
+
+    def updateBusyUntil(self,instr):
+        category = instr.category
+
+        if (category == "FETCH") or (category == "STORE"):
+            category = 'INCR'
+        elif ("MULTIPLY" in category):
+            category = 'MULTIPLY'
+        self.busyUntil[category] = instr.timeDict['startTime'] + self.segTime[category]
 
     def compute(self, instr):
         """
