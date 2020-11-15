@@ -161,6 +161,7 @@ class CDC6600System():
             category = self.getAvailIncr()
         elif ("MULTIPLY" in category):
             category = self.getAvailMult()
+            instr.category = category
 
         if(self.busyUntil[category] > timing):
             instrIdx = self.instrList.index(instr)

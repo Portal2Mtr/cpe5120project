@@ -72,8 +72,6 @@ class instrManager():
 
         return returnList
 
-
-
     def calcOutput(self,outputVal):
         """
         Set the output of the manager's instruction dictionary to a value.

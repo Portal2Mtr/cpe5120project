@@ -33,7 +33,7 @@ def getTimeFromOp(self, category):
         return category, self.funcUnits[category]
     except(KeyError):
         if (category == "FETCH") or (category == "STORE"):
-            return self.getCurrIncr(), self.funcUnits[self.getCurrIncr()]
+            return 'INCR', self.funcUnits['INCR']
         elif (category == "MULTIPLY"):
             return category, self.funcUnits["MULTIPLY1"]  # Doesn't matter for func unit execution
         else:
@@ -183,8 +183,9 @@ def generateTimes(self, instr):
                 instr.timeDict['issueTime'] = lastInstr.timeDict['unitReadyTime']
 
     # Get timing offset for managing resource conflicts
-    instr.timeDict['startTime'] = instr.timeDict['issueTime'] + \
-                                  self.checkResourceConflict(instr)
+    # instr.timeDict['startTime'] = instr.timeDict['issueTime'] + \
+    #                               self.checkResourceConflict(instr) # TODO
+    instr.timeDict['startTime'] = instr.timeDict['issueTime']
     # Update Variable and make sure its not being used by another instruction
 
     # Check if we need to wait for data dependancy
@@ -201,10 +202,13 @@ def generateTimes(self, instr):
         self.instrList[instr.leftOpIdx].busyUntil = instr.timeDict['resultTime']
         self.instrList[instr.rightOpIdx].busyUntil = instr.timeDict['resultTime']
 
+    if instr.category == "FETCH" or instr.category == "STORE":
+        instr.timeDict['unitReadyTime'] = instr.timeDict['startTime'] + self.segTime['INCR']
+    else:
+        instr.timeDict['unitReadyTime'] = instr.timeDict['startTime'] + self.segTime[instr.category]
 
-    instr.timeDict['unitReadyTime'] = instr.timeDict['resultTime'] + self.unitReadyWait
     if instr.category == "FETCH":
-        instr.timeDict['fetchTime'] = instr.timeDict['unitReadyTime'] + self.fetchStoreWait
+        instr.timeDict['fetchTime'] = instr.timeDict['resultTime'] + self.fetchStoreWait
     elif instr.category == "STORE":
         instr.timeDict['storeTime'] = instr.timeDict['unitReadyTime'] + self.fetchStoreWait
 

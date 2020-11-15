@@ -50,55 +50,55 @@ if __name__ == "__main__":
     # Constant values for equation calculations can be manipulated here.
     scalarValues = {"A": 1, "B": 2, "C": 3}
 
-    print('######################################################################################')
-    print('                                      CDC 6600                                        ')
-    print('######################################################################################')
-    cdc6600 = CDC6600System()
-
-    # Get input and parse instuctions
-    print("---------------------------------------------------")
-    print("Parsing input and setting up CDC 6600 system...")
-
-    # Parse input and create ordered instruction list
-    instrList = cdc6600.creatInstrList(command=selEqn,
-                                       values=scalarValues,
-                                       varInput=xinput)
-
-    # 'Run' instructions and generate timing output
-    print("Computing instructions for CDC 6600...")
-    print("---------------------------------------------------")
-    for idx,instr in enumerate(instrList):
-        cdc6600.compute(instr)
-        print('Processed: %s' % instr.equation)
-
-    print("---------------------------------------------------")
-    # Create table based on in-class examples
-    print("Creating table for CDC 6600...")
-    x = PrettyTable()
-    x.field_names = ["Instr. #", "Word #","Eqn.","Desc.", "Instr. Type","Issue","Start",
-                     "Result","Unit Ready","Fetch","Store","Func. Unit","Registers"]
-    for instr in instrList:
-        x.add_row(instr.getDesc())
-    print(x.get_string())
-
-    # Print out equation output values
-    print("---------------------------------------------------")
-    outputInstr = instrList[-1]
-    print("Equation Result: " +outputInstr.varName + " = " + str(outputInstr.value))
-
-    # Print out performance analysis with resource conflicts
-    print("---------------------------------------------------")
-    if len(cdc6600.hardDeps) > 0:
-        print("Hardware resource conflicts at line(s):")
-        print(str(cdc6600.hardDeps))
-    else:
-        print("No detected hardware conflicts!")
-    if len(cdc6600.dataDeps) > 0:
-        print("Data resource conflicts at line(s):")
-        print(str(cdc6600.dataDeps))
-    else:
-        print("No detected data dependencies!")
-    print("---------------------------------------------------")
+    # print('######################################################################################')
+    # print('                                      CDC 6600                                        ')
+    # print('######################################################################################')
+    # cdc6600 = CDC6600System()
+    #
+    # # Get input and parse instuctions
+    # print("---------------------------------------------------")
+    # print("Parsing input and setting up CDC 6600 system...")
+    #
+    # # Parse input and create ordered instruction list
+    # instrList = cdc6600.creatInstrList(command=selEqn,
+    #                                    values=scalarValues,
+    #                                    varInput=xinput)
+    #
+    # # 'Run' instructions and generate timing output
+    # print("Computing instructions for CDC 6600...")
+    # print("---------------------------------------------------")
+    # for idx,instr in enumerate(instrList):
+    #     cdc6600.compute(instr)
+    #     print('Processed: %s' % instr.equation)
+    #
+    # print("---------------------------------------------------")
+    # # Create table based on in-class examples
+    # print("Creating table for CDC 6600...")
+    # x = PrettyTable()
+    # x.field_names = ["Instr. #", "Word","Eqn.","Desc.", "Instr. Type","Issue","Start",
+    #                  "Result","Unit Ready","Fetch","Store","Func. Unit","Registers"]
+    # for instr in instrList:
+    #     x.add_row(instr.getDesc())
+    # print(x.get_string())
+    #
+    # # Print out equation output values
+    # print("---------------------------------------------------")
+    # outputInstr = instrList[-1]
+    # print("Equation Result: " +outputInstr.varName + " = " + str(outputInstr.value))
+    #
+    # # Print out performance analysis with resource conflicts
+    # print("---------------------------------------------------")
+    # if len(cdc6600.hardDeps) > 0:
+    #     print("Hardware resource conflicts at line(s):")
+    #     print(str(cdc6600.hardDeps))
+    # else:
+    #     print("No detected hardware conflicts!")
+    # if len(cdc6600.dataDeps) > 0:
+    #     print("Data resource conflicts at line(s):")
+    #     print(str(cdc6600.dataDeps))
+    # else:
+    #     print("No detected data dependencies!")
+    # print("---------------------------------------------------")
 
     print('######################################################################################')
     print('                                      CDC 7600                                        ')
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     # Create table based on in-class examples
     print("Creating table for CDC 7600...")
     x = PrettyTable()
-    x.field_names = ["Instr. #", "Word #", "Eqn.", "Desc.", "Instr. Type", "Issue", "Start",
+    x.field_names = ["Instr. #", "Word", "Eqn.", "Desc.", "Instr. Type", "Issue", "Start",
                      "Result", "Unit Ready", "Fetch", "Store", "Func. Unit", "Registers"]
     for instr in instrList:
         x.add_row(instr.getDesc())
@@ -139,7 +139,7 @@ if __name__ == "__main__":
 
     # Print out performance analysis with resource conflicts
     print("---------------------------------------------------")
-    if len(cdc6600.hardDeps) > 0:
+    if len(cdc7600.hardDeps) > 0:
         print("Hardware resource conflicts at line(s):")
         print(str(cdc7600.hardDeps))
     else:

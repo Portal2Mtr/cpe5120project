@@ -166,6 +166,10 @@ def generateTimes(self, instr):
             if instr.operator is not None and instr.instrManager.manageType == "SCALAR":
                 # Check if this is the scalar reuse instruction, if so then wait until complete execution of
                 # constant fetching
+
+                print("Data dependancy at instruction line %s!" % (instrIdx + 1))
+                if (instrIdx + 1) not in self.dataDeps:
+                    self.dataDeps.append(instrIdx + 1)
                 instr.timeDict['issueTime'] = instr.instrManager.instrDict['assign2'].timeDict['fetchTime'] + 1
 
         else:

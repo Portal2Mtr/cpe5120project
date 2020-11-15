@@ -32,7 +32,7 @@ class CDC7600System():
         self.wordSize = 4 # Bytes
         self.shortWait = 1
         self.longWait = 2
-        self.wordWait = 8
+        self.wordWait = 6
         self.unitReadyWait = 1
         self.fetchStoreWait = 4
         self.opMap = {
@@ -42,26 +42,33 @@ class CDC7600System():
         }
         self.funcUnits = {
             "FLADD":4,
-            "MULTIPLY1":10,
-            "MULTIPLY2":10,
-            "DIVIDE":29,
-            "FIXADD":3,
-            "INCR1":3,
-            "INCR2":3,
-            "BOOLEAN":3,
-            "SHIFT":3, # Special case for Fixed point, not used
+            "MULTIPLY":5,
+            "DIVIDE":20,
+            "FIXADD":2,
+            "INCR":2,
+            "BOOLEAN":2,
+            "SHIFT":2,
             "BRANCH":0 # Depends on input type, not used
+        }
+        # Setment times for functional units
+        self.segTime = {
+            "FLADD": 1,
+            "MULTIPLY": 2,
+            "DIVIDE": 18,
+            "FIXADD": 1,
+            "INCR": 1,
+            "BOOLEAN": 1,
+            "SHIFT": 1,  # Special case for Fixed point, not used
+            "BRANCH": 0  # Depends on input type, not used
         }
 
         # Indicators for how long unitl func unit can be used again.
         self.busyUntil = {
             "FLADD": 0,
-            "MULTIPLY1": 0,
-            "MULTIPLY2": 0,
+            "MULTIPLY": 0,
             "DIVIDE": 0,
             "FIXADD": 0,
-            "INCR1": 0,
-            "INCR2": 0,
+            "INCR": 0,
             "BOOLEAN": 0,
             "SHIFT": 0,
             "BRANCH": 0
@@ -158,9 +165,9 @@ class CDC7600System():
         timing = instr.timeDict['issueTime']
 
         if (category == "FETCH") or (category == "STORE"):
-            category = self.getAvailIncr()
+            category = 'INCR'
         elif ("MULTIPLY" in category):
-            category = self.getAvailMult()
+            category = 'MULTIPLY'
 
         if(self.busyUntil[category] > timing):
             instrIdx = self.instrList.index(instr)
@@ -203,37 +210,6 @@ class CDC7600System():
                         if instr.category == category:
                             return instr
         return None
-
-    def getCurrIncr(self):
-        """
-        Gets the current increment unit that is availible.
-        :return: Increment unit string.
-        """
-        if self.busyUntil['INCR1'] > self.busyUntil['INCR2']:
-            return 'INCR1'
-        else:
-            return 'INCR2'
-
-    def getAvailIncr(self):
-        """
-        Returns the availible increment unit that is not busy.
-        :return:
-        """
-        if self.busyUntil['INCR1'] <= self.busyUntil['INCR2']:
-            return 'INCR1'
-        else:
-            return 'INCR2'
-
-    def getAvailMult(self):
-        """
-        Returns the avialible multiply unit that is not busy.
-        :return: Multiply unit string.
-        """
-        if self.busyUntil['MULTIPLY1'] <= self.busyUntil['MULTIPLY2']:
-            return 'MULTIPLY1'
-        else:
-            return 'MULTIPLY2'
-
 
     def compute(self, instr):
         """
