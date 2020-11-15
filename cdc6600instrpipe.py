@@ -60,7 +60,8 @@ def checkDataDepend(self, instr):
             # Log data dependancy
             instrIdx = self.instrList.index(instr)
             print("Data dependancy at instruction line %s!" % (instrIdx+1))
-            self.dataDeps.append(instrIdx + 1)
+            if (instrIdx + 1) not in self.dataDeps:
+                self.dataDeps.append(instrIdx + 1)
 
         # Return time adjustment
         return currStartTime - oldStartTime
@@ -77,8 +78,9 @@ def checkDataDepend(self, instr):
                     if not hasLogged:
                         hasLogged = True
                         instrIdx = self.instrList.index(instr)
-                        print("Data dependancy at instr idx %s!" % instrIdx)
-                        self.dataDeps.append(instrIdx)
+                        print("Data dependancy at instruction line %s!" % (instrIdx+1))
+                        if (instrIdx+1) not in self.dataDeps:
+                            self.dataDeps.append(instrIdx+1)
 
         # Update time adjustment
         return currStartTime - oldStartTime
@@ -133,7 +135,6 @@ def performArithmetic(self, instr):
                 # Get manager by var
                 runningVal += self.ops[key](workComps[0],workComps[1])
                 alreadyCalc.extend(compute)
-                print("Success")
 
     instr.value = runningVal
 
@@ -153,14 +154,33 @@ def generateTimes(self, instr):
     else:
         # Check for next word
         if self.instrList[instrIdx - 1].currWord == instr.currWord:
+            # Word is not changed, update issue time normally based on instruction type
             prevType = self.instrList[instrIdx - 1].instrType
             if prevType == "LONG":
+                # Adjust time for previous long instruction.
                 instr.timeDict['issueTime'] = self.longWait + self.instrList[instrIdx - 1].timeDict['issueTime']
             else:
+                # Adjust time for previous short instruction
                 instr.timeDict['issueTime'] = self.shortWait + self.instrList[instrIdx - 1].timeDict['issueTime']
+
+            if instr.operator is not None and instr.instrManager.manageType == "SCALAR":
+                # Check if this is the scalar reuse instruction, if so then wait until complete execution of
+                # constant fetching
+                instr.timeDict['issueTime'] = instr.instrManager.instrDict['assign2'].timeDict['fetchTime'] + 1
+
         else:
+            # Word has changed, adjust accordingly
             instr.timeDict['issueTime'] = self.wordWait + self.currWordTimes[self.instrList[instrIdx - 1].currWord]
             self.currWordTimes[instr.currWord] = instr.timeDict['issueTime']
+
+        if instr.operator is not None:
+            if not self.checkFuncUnit(instr):
+                # Check if functional unit is fully clear, if not then get fetchTime of last instruction
+                instrIdx = self.instrList.index(instr)
+                print("Hardware esource dependancy at instruction line %s!" % (instrIdx + 1))
+                self.hardDeps.append(instrIdx+1)
+                lastInstr = self.getLastInstrFunc(instr.category)
+                instr.timeDict['issueTime'] = lastInstr.timeDict['unitReadyTime']
 
     # Get timing offset for managing resource conflicts
     instr.timeDict['startTime'] = instr.timeDict['issueTime'] + \

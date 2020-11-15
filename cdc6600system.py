@@ -164,12 +164,45 @@ class CDC6600System():
 
         if(self.busyUntil[category] > timing):
             instrIdx = self.instrList.index(instr)
-            print("Hardware Resource dependancy at instr idx %s!" % instrIdx)
-            self.hardDeps.append(instrIdx)
+            print("Hardware Resource dependancy at instr line %s!" % (instrIdx + 1))
+            self.hardDeps.append(instrIdx+1)
             return self.busyUntil[category] - timing
         else:
             self.busyUntil[category] = self.funcUnits[category] + timing + self.unitReadyWait
             return 0
+
+    def checkFuncUnit(self,instr):
+        """
+        Checks if an instructions functional unit is available.
+        :param instr: Instruction to check functional unit for.
+        :return: Boolean on whether functional unit is availible.
+        """
+        unitReady = False
+        timing = instr.timeDict['issueTime']
+        if instr.operator is not None:
+            if "MULTIPLY" != instr.category or instr.category.find("INCR") != -1:
+                if self.busyUntil[instr.category] < timing:
+                    unitReady = True
+            else:
+                unitReady = True # For CDC6600, only nonmultiply and nonadd units are an issue.
+
+
+        return unitReady
+
+    def getLastInstrFunc(self,category):
+        """
+        Returns the last instruction executed by a functional unit.
+        :param category: Functional unit to check
+        :return: Instruction that was last executed by functional unit.
+        """
+        for key,manage in self.compDict.items():
+            # Check comp operations for conflicting functional unit times
+            for key2,instrList in manage.opDict.items():
+                for instr in instrList:
+                    if instr is not None:
+                        if instr.category == category:
+                            return instr
+        return None
 
     def getCurrIncr(self):
         """

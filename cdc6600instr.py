@@ -153,4 +153,5 @@ class CDC6600Instr():
 
     def __eq__(self, other):
         # Used in instruction manager to ensure correct instruction object is chosen.
-        return str(other.instrManager) == str(self.instrManager) and other.varName == self.varName
+        return str(other.instrManager) == str(self.instrManager) and other.varName == self.varName and \
+               other.currWord == self.currWord
