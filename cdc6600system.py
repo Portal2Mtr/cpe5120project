@@ -165,7 +165,10 @@ class CDC6600System():
 
         if(self.busyUntil[category] > timing):
             instrIdx = self.instrList.index(instr)
-            print("Hardware Resource dependancy at instr line %s!" % (instrIdx + 1))
+            print("Hardware resource dependancy at instr line %s!" % (instrIdx + 1))
+            lastInstr = self.getLastInstrFunc(instr.category)
+            lastInstr.conflictInd['unitReadyTime'] = 1
+            instr.conflictInd['startTime'] = 1
             self.hardDeps.append(instrIdx+1)
             return self.busyUntil[category] - timing
         else:
@@ -196,13 +199,21 @@ class CDC6600System():
         :param category: Functional unit to check
         :return: Instruction that was last executed by functional unit.
         """
-        for key,manage in self.compDict.items():
-            # Check comp operations for conflicting functional unit times
-            for key2,instrList in manage.opDict.items():
-                for instr in instrList:
+        if "MULTIPLY" in category:
+            for key,manage in self.compDict.items():
+                # Check comp operations for conflicting functional unit times
+                for key2,instr in manage.instrDict.items():
                     if instr is not None:
                         if instr.category == category:
                             return instr
+        else:
+            for key,manage in self.compDict.items():
+                # Check comp operations for conflicting functional unit times
+                for key2,instrList in manage.opDict.items():
+                    for instr in instrList:
+                        if instr is not None:
+                            if instr.category == category:
+                                return instr
         return None
 
     def getCurrIncr(self):

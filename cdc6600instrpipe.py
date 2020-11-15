@@ -89,7 +89,8 @@ def checkDataDepend(self, instr):
                         print("Data dependancy at instruction line %s!" % (instrIdx+1))
                         if (instrIdx+1) not in self.dataDeps:
                             instr.conflictInd['startTime'] = 3
-                            line.conflictInd['resultTime'] = 3
+                            self.instrList[instrIdx-1].conflictInd['resultTime'] = 3
+                            # line.conflictInd['resultTime'] = 3
                             self.dataDeps.append(instrIdx+1)
 
         # Update time adjustment
@@ -186,9 +187,21 @@ def generateTimes(self, instr):
                 instr.timeDict['issueTime'] = instr.instrManager.instrDict['assign2'].timeDict['fetchTime'] + 1
 
         else:
-            # Word has changed, adjust accordingly
-            instr.timeDict['issueTime'] = self.wordWait + self.currWordTimes[self.instrList[instrIdx - 1].currWord]
-            self.currWordTimes[instr.currWord] = instr.timeDict['issueTime']
+            if instr.operator is not None and instr.instrManager.manageType == "SCALAR":
+                # Check if this is the scalar reuse instruction, if so then wait until complete execution of
+                # constant fetching
+
+                # Register reuse, add indicator (2)
+                print("Register reuse at instruction line %s!" % (instrIdx + 1))
+                if (instrIdx + 1) not in self.hardDeps:
+                    instr.conflictInd['issueTime'] = 2
+                    instr.instrManager.instrDict['assign2'].conflictInd['fetchTime'] = 2
+                    self.hardDeps.append(instrIdx + 1)
+                instr.timeDict['issueTime'] = instr.instrManager.instrDict['assign2'].timeDict['fetchTime'] + 1
+            else:
+                # Word has changed, adjust accordingly
+                instr.timeDict['issueTime'] = self.wordWait + self.currWordTimes[self.instrList[instrIdx - 1].currWord]
+                self.currWordTimes[instr.currWord] = instr.timeDict['issueTime']
 
         if instr.operator is not None:
             if not self.checkFuncUnit(instr):

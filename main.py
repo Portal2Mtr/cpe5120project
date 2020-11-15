@@ -113,53 +113,59 @@ if __name__ == "__main__":
         print("No detected data dependencies!")
     print("---------------------------------------------------")
 
-    # print('######################################################################################')
-    # print('                                      CDC 7600                                        ')
-    # print('######################################################################################')
-    #
-    # cdc7600 = CDC7600System()
-    #
-    # # Get input and parse instuctions
-    # print("---------------------------------------------------")
-    # print("Parsing input and setting up CDC 7600 system...")
-    #
-    # # Parse input and create ordered instruction list
-    # instrList = cdc7600.creatInstrList(command=selEqn,
-    #                                    values=scalarValues,
-    #                                    varInput=xinput)
-    #
-    # # 'Run' instructions and generate timing output
-    # print("Computing instructions for CDC 7600...")
-    # print("---------------------------------------------------")
-    # for idx, instr in enumerate(instrList):
-    #     cdc7600.compute(instr)
-    #     print('Processed: %s' % instr.equation)
-    #
-    # print("---------------------------------------------------")
-    # # Create table based on in-class examples
-    # print("Creating table for CDC 7600...")
-    # x = PrettyTable()
-    # x.field_names = ["Instr. #", "Word", "Eqn.", "Desc.", "Instr. Type", "Issue", "Start",
-    #                  "Result", "Unit Ready", "Fetch", "Store", "Func. Unit", "Registers"]
-    # for instr in instrList:
-    #     x.add_row(instr.getDesc())
-    # print(x.get_string())
-    #
-    # # Print out equation output values
-    # print("---------------------------------------------------")
-    # outputInstr = instrList[-1]
-    # print("Equation Result: " + outputInstr.varName + " = " + str(outputInstr.value))
-    #
-    # # Print out performance analysis with resource conflicts
-    # print("---------------------------------------------------")
-    # if len(cdc7600.hardDeps) > 0:
-    #     print("Hardware resource conflicts at line(s):")
-    #     print(str(cdc7600.hardDeps))
-    # else:
-    #     print("No detected hardware conflicts!")
-    # if len(cdc7600.dataDeps) > 0:
-    #     print("Data resource conflicts at line(s):")
-    #     print(str(cdc7600.dataDeps))
-    # else:
-    #     print("No detected data dependencies!")
-    # print("---------------------------------------------------")
+    print('######################################################################################')
+    print('                                      CDC 7600                                        ')
+    print('######################################################################################')
+
+    cdc7600 = CDC7600System()
+
+    # Get input and parse instuctions
+    print("---------------------------------------------------")
+    print("Parsing input and setting up CDC 7600 system...")
+
+    # Parse input and create ordered instruction list
+    instrList = cdc7600.creatInstrList(command=selEqn,
+                                       values=scalarValues,
+                                       varInput=xinput)
+
+    # 'Run' instructions and generate timing output
+    print("Computing instructions for CDC 7600...")
+    print("---------------------------------------------------")
+    for idx, instr in enumerate(instrList):
+        cdc7600.compute(instr)
+        print('Processed: %s' % instr.equation)
+
+    print("---------------------------------------------------")
+    # Create table based on in-class examples
+    print("Creating table for CDC 7600...")
+    print("KEY:" + R + " Unit Busy " + N + G + " Register Reuse " + N + B + " Data Dependancy " + N)
+    x = PrettyTable()
+    x.field_names = ["Instr. #", "Word", "Eqn.", "Desc.", "Instr. Type", "Issue", "Start",
+                     "Result", "Unit Ready", "Fetch", "Store", "Func. Unit", "Registers"]
+    descOffset = 5
+    for instr in instrList:
+        workDesc = instr.getDesc()
+        for idx, (key, val) in enumerate(instr.conflictInd.items()):
+            if str(val) in conflictInds.keys():
+                workDesc[idx + descOffset] = conflictInds[str(val)] + workDesc[idx + descOffset] + N
+        x.add_row(workDesc)
+    print(x.get_string())
+
+    # Print out equation output values
+    print("---------------------------------------------------")
+    outputInstr = instrList[-1]
+    print("Equation Result: " + outputInstr.varName + " = " + str(outputInstr.value))
+
+    # Print out performance analysis with resource conflicts
+    print("---------------------------------------------------")
+    if len(cdc7600.hardDeps) > 0:
+        print("Hardware resource conflicts at line(s):")
+        print(str(cdc7600.hardDeps))
+    else:
+        print("No detected hardware conflicts!")
+    if len(cdc7600.dataDeps) > 0:
+        print("Data resource conflicts at line(s):")
+        print(str(cdc7600.dataDeps))
+    else:
+        print("No detected data dependencies!")
+    print("---------------------------------------------------")
