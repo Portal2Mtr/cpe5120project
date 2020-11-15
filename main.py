@@ -40,7 +40,8 @@ if __name__ == "__main__":
         Python 3.8.
     """
     print("Welcome! This program simulates the timing diagrams for\n"
-          "the CDC6600/7600 systems! Please select your input equation.")
+          "the CDC6600/7600 systems! Please select your input equation.\n"
+          "NOTE: Vectors are not supported for this version of the project.")
 
     # Generate System object for generating timing diagram
     xinput,selEqn= getInputEqn()
@@ -56,8 +57,7 @@ if __name__ == "__main__":
     # Parse input and create ordered instruction list
     instrList = cdc6600.creatInstrList(command=selEqn,
                                        values=scalarValues,
-                                       varInput=xinput,
-                                       system=cdc6600)
+                                       varInput=xinput)
 
     # 'Run' instructions and generate timing output
     print("Computing instructions for CDC 6600...")
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     print("Creating table for CDC 6600...")
     # TODO Add colors to instruction conflicts
     x = PrettyTable()
-    x.field_names = ["Word #","Eqn.","Desc.", "Instr. Type","Issue","Start",
+    x.field_names = ["Instr. #", "Word #","Eqn.","Desc.", "Instr. Type","Issue","Start",
                      "Result","Unit Ready","Fetch","Store","Func. Unit","Registers"]
     for instr in instrList:
         x.add_row(instr.getDesc())

@@ -273,8 +273,8 @@ def eqnAndRegisters(self,instr):
         instr.outputAddrIdx = memAddrIdx
         instr.instrRegs['result'] = memAddr
         instr.instrRegs['leftOp'] = memAddr
-        self.memRegs[self.instrList.index(instr)] = emptyMemIdx
-        self.addrRegs[self.instrList.index(instr)] = memAddr
+        self.setMemByIdx(emptyMemIdx, self.instrList.index(instr))
+        self.setAddrByIdx(memAddr, self.instrList.index(instr))
         currIdx = instr.outputAddrIdx
         instr.instrRegs['rightOp'] = "K" + str(currIdx)
         instr.instrRegs['operand'] = "+"
@@ -290,7 +290,7 @@ def eqnAndRegisters(self,instr):
         instr.outputAddrIdx = memAddrIdx
         # instr.instrRegs['result'] = memAddr
         instr.instrRegs['leftOp'] = memAddr
-        self.addrRegs[self.instrList.index(instr)] = memAddr
+        self.setAddrByIdx(memAddr, self.instrList.index(instr))
         # Get most recently used operator and its output
 
         recentOp = self.instrList[self.instrList.index(instr) - 1]

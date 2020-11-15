@@ -37,7 +37,7 @@ class CDC6600Instr():
 
         # Define category based on func unit of operator
         if self.operator is not None:
-            self.category = self.system.opMap[operator]
+            self.category = system.getFuncFromOp(self.operator)
 
         # All nonfunctional unit instructions are long, all functional units are short
         longCats = ["FETCH","STORE"]
@@ -83,6 +83,9 @@ class CDC6600Instr():
 
         return outputArray
 
+    def getVar(self):
+        return self.varName
+
     def genEqn(self):
         """
         Generates a string equation for a given instruction from self.instrRegs.
@@ -107,6 +110,12 @@ class CDC6600Instr():
         setRegs = list(set(regs)) # Remove all duplicate registers
         newDesc = ",".join(setRegs)
         self.descRegisters = newDesc
+
+        # Remove current instruction from its manager
+    def removeFromMan(self):
+        for key, val in self.instrManager.instrDict.items():
+            if val == self:
+                self.instrManager.instrDict[key] = None
 
     def replaceInMan(self,newInstr):
         """

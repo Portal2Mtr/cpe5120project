@@ -45,6 +45,12 @@ class instrManager():
         else: # Constant
             return self.instrDictIdxs['assign1']
 
+    def assignIdx(self, instr, idx):
+        for key, value in self.instrDict.items():
+            if value == instr:
+                self.instrDictIdxs[key] = idx
+                return
+
     def addInstr(self,instr,key):
         """
         Add instruction to manager
@@ -232,7 +238,7 @@ class instrManager():
                 lastCalcIdx = idx -1
                 instr.leftOpIdx = lastCalcIdx
                 # Get empty memory register for output
-                instr.rightOpIdx = int(self.system.getEmptyMem()[-1])
+        instr.rightOpIdx = int(self.system.getEmptyMem()[-1])
 
     def updateCompOpIdxs(self,compOpList):
         workOps = self.mangOps[compOpList[0].varName]

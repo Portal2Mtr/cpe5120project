@@ -1,10 +1,17 @@
-from cdc6600instr import CDC6600Instr
 import operator
 
 # Class for handling keeping track of each component's timing in the CDC 6600 system
 class CDC6600System():
+    """
+        The main CDC 6600 simulation object. This object uses the CDC6600Instr objects to
+        generate a timing diagram for the CDC 6600.
+    """
 
     def __init__(self,inputVar="X"):
+        """
+        Constructor for CDC6600System,
+        :param inputVar: Variable string to alter what variable to look for in input equation.
+        """
 
         numAddr = 8
         numOp = 8
@@ -42,9 +49,11 @@ class CDC6600System():
             "INCR1":3,
             "INCR2":3,
             "BOOLEAN":3,
-            "SHIFT":3, # TODO: Special case for FP
-            "BRANCH":0 # TODO: Depends on input
+            "SHIFT":3, # Special case for Fixed point, not used
+            "BRANCH":0 # Depends on input type, not used
         }
+
+        # Indicators for how long unitl func unit can be used again.
         self.busyUntil = {
             "FLADD": 0,
             "MULTIPLY1": 0,
@@ -83,6 +92,10 @@ class CDC6600System():
         cleanUpTimes,checkDataDepend,getTimeFromOp,createDesc
 
     def getEmptyAddr(self):
+        """
+        Gets an empty register from the system.
+        :return: Returns string address of empty register.
+        """
         for i in self.addrRegs.keys():
             if i != "A0":
                 if self.addrRegs[i] is None:
@@ -101,24 +114,46 @@ class CDC6600System():
                 return i
 
     def getEmptyMem(self):
+        """
+        Returns an empty memory register.
+        :return: Empty memory register.
+        """
         for i in self.memRegs.keys():
             if i != "K0":
                 if self.memRegs[i] is None:
                     return i
 
     def checkBusy(self,funcUnit,currTime):
+        """
+        Checks if a given functional unit is busy.
+        :param funcUnit: Functional unit to check.
+        :param currTime: Given time to compare to functional unit.
+        :return: Bool if currTime is greater than the time a functional unit is busy.
+        """
         waitVal = self.busyUntil[funcUnit]
         return (waitVal > currTime)
 
     def getFuncFromOp(self,operator):
         return self.opMap[operator]
 
-    def creatInstrList(self,command, values, varInput, system):
+    def creatInstrList(self,command, values, varInput):
+        """
+        Creates the global instruction list for generating the timing table.
+        :param command: Input equation.
+        :param values: Constant values
+        :param varInput: X Variable input value.
+        :return: Created instruction list.
+        """
         # Move parseandsort to make editing easer
-        instrList = self.parseAndSort(command=command, values=values, varInput=varInput, system=system)
+        instrList = self.parseAndSort(command=command, values=values, varInput=varInput)
         return instrList
 
     def checkResourceConflict(self,instr):
+        """
+        Checks for hardware resource conflicts with a given instruction.
+        :param instr: Input instruction.
+        :return:
+        """
         category = instr.category
         timing = instr.timeDict['issueTime']
 
@@ -137,18 +172,30 @@ class CDC6600System():
             return 0
 
     def getCurrIncr(self):
+        """
+        Gets the current increment unit that is availible.
+        :return: Increment unit string.
+        """
         if self.busyUntil['INCR1'] > self.busyUntil['INCR2']:
             return 'INCR1'
         else:
             return 'INCR2'
 
     def getAvailIncr(self):
+        """
+        Returns the availible increment unit that is not busy.
+        :return:
+        """
         if self.busyUntil['INCR1'] <= self.busyUntil['INCR2']:
             return 'INCR1'
         else:
             return 'INCR2'
 
     def getAvailMult(self):
+        """
+        Returns the avialible multiply unit that is not busy.
+        :return: Multiply unit string.
+        """
         if self.busyUntil['MULTIPLY1'] <= self.busyUntil['MULTIPLY2']:
             return 'MULTIPLY1'
         else:
@@ -156,7 +203,10 @@ class CDC6600System():
 
 
     def compute(self, instr):
-        # Generate instruction equation and description from
+        """
+        Wrapper for creating timing table with other subfunctions.
+        :param instr: Input instruction.
+        """
         self.eqnAndRegisters(instr)
         self.createDesc(instr)
         self.generateTimes(instr)
