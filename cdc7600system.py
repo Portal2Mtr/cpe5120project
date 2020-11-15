@@ -1,16 +1,19 @@
 import operator
 
-# Class for handling keeping track of each component's timing in the CDC 7600 system
+# Class for handling keeping track of
+# each component's timing in the CDC 7600 system
 class CDC7600System():
     """
-        The main CDC 7600 simulation object. This object uses the CDC7600Instr objects to
+        The main CDC 7600 simulation object.
+         This object uses the CDC7600Instr objects to
         generate a timing diagram for the CDC 7600.
     """
 
     def __init__(self,inputVar="X"):
         """
         Constructor for CDC7600System,
-        :param inputVar: Variable string to alter what variable to look for in input equation.
+        :param inputVar: Variable string to
+        alter what variable to look for in input equation.
         """
 
         numAddr = 8
@@ -89,7 +92,11 @@ class CDC7600System():
         self.hardDeps = []
 
         # Used for keeping track of complex instruction objects
-        self.compDict = {'SQU':None,'SCA':None,'CON':None,'OPS':None,'OUT':None}
+        self.compDict = {'SQU':None,
+                         'SCA':None,
+                         'CON':None,
+                         'OPS':None,
+                         'OUT':None}
 
         self.genTimeIdx = 0
 
@@ -110,7 +117,8 @@ class CDC7600System():
 
     def setAddrByIdx(self,register,idx):
         """
-        Sets addr register to instruction index number from instrList.
+        Sets addr register to
+        instruction index number from instrList.
         :param register: Register string for indexing.
         :param idx: index to set address register to.
         """
@@ -118,7 +126,8 @@ class CDC7600System():
 
     def setMemByIdx(self,register,idx):
         """
-        Sets memory register to instruction index number from instrList.
+        Sets memory register to
+         instruction index number from instrList.
         :param register: Register string for indexing.
         :param idx: Index to set memory address to.
         """
@@ -126,7 +135,8 @@ class CDC7600System():
 
     def getEmptyOp(self):
         """
-        Gets an empty operator register from opRegs dict.
+        Gets an empty operator
+        register from opRegs dict.
         :return: Key of empty operator register.
         """
         for i in self.opRegs.keys():
@@ -148,7 +158,8 @@ class CDC7600System():
         Checks if a given functional unit is busy.
         :param funcUnit: Functional unit to check.
         :param currTime: Given time to compare to functional unit.
-        :return: Bool if currTime is greater than the time a functional unit is busy.
+        :return: Bool if currTime
+        is greater than the time a functional unit is busy.
         """
         waitVal = self.busyUntil[funcUnit]
         return (waitVal > currTime)
@@ -158,19 +169,24 @@ class CDC7600System():
 
     def creatInstrList(self,command, values, varInput):
         """
-        Creates the global instruction list for generating the timing table.
+        Creates the global instruction
+        list for generating the timing table.
         :param command: Input equation.
         :param values: Constant values
         :param varInput: X Variable input value.
         :return: Created instruction list.
         """
         # Move parseandsort to make editing easer
-        instrList = self.parseAndSort(command=command, values=values, varInput=varInput)
+        instrList = \
+            self.parseAndSort(command=command,
+                              values=values,
+                              varInput=varInput)
         return instrList
 
     def checkResourceConflict(self,instr):
         """
-        Checks for hardware resource conflicts with a given instruction.
+        Checks for hardware resource
+        conflicts with a given instruction.
         :param instr: Input instruction.
         :return:
         """
@@ -184,7 +200,8 @@ class CDC7600System():
 
         if(self.busyUntil[category] > timing):
             instrIdx = self.instrList.index(instr)
-            print("Hardware Resource dependancy at instr line %s!" % (instrIdx + 1))
+            print("Hardware Resource "
+                  "dependancy at instr line %s!" % (instrIdx + 1))
             lastInstr = self.getLastInstrFunc(instr)
             lastInstr.conflictInd['unitReadyTime'] = 1
             instr.conflictInd['issueTime'] = 1
@@ -207,28 +224,33 @@ class CDC7600System():
                 if self.busyUntil[instr.category] < timing:
                     unitReady = True
             else:
-                unitReady = True # For CDC7600, only nonmultiply and nonadd units are an issue.
+                unitReady = True
+                # For CDC7600, only nonmultiply and nonadd units are an issue.
 
 
         return unitReady
 
     def getLastInstrFunc(self, currInstr):
         """
-        Returns the last instruction executed by a functional unit.
+        Returns the last instruction
+        executed by a functional unit.
         :param category: Functional unit to check
-        :return: Instruction that was last executed by functional unit.
+        :return: Instruction that
+         was last executed by functional unit.
         """
         category = currInstr.category
         if "MULTIPLY" in category:
             for key, manage in self.compDict.items():
-                # Check comp operations for conflicting functional unit times
+                # Check comp operations for
+                # conflicting functional unit times
                 for key2, instr in manage.instrDict.items():
                     if instr is not None:
                         if instr.category == category and instr != currInstr:
                             return instr
         else:
             for key, manage in self.compDict.items():
-                # Check comp operations for conflicting functional unit times
+                # Check comp operations for
+                # conflicting functional unit times
                 for key2, instrList in manage.opDict.items():
                     for instr in instrList:
                         if instr is not None:
@@ -238,7 +260,8 @@ class CDC7600System():
 
     def updateBusyUntil(self,instr):
         """
-        Updates the busyUntil dict which manages when functional units can be used again.
+        Updates the busyUntil dict which
+         manages when functional units can be used again.
         :param instr: Instruction for timing reference.
         """
         category = instr.category
@@ -247,7 +270,9 @@ class CDC7600System():
             category = 'INCR'
         elif ("MULTIPLY" in category):
             category = 'MULTIPLY'
-        self.busyUntil[category] = instr.timeDict['startTime'] + self.segTime[category]
+        self.busyUntil[category] =\
+            instr.timeDict['startTime'] + \
+            self.segTime[category]
 
     def compute(self, instr):
         """

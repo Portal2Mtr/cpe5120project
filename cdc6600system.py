@@ -1,16 +1,17 @@
 import operator
 
-# Class for handling keeping track of each component's timing in the CDC 6600 system
 class CDC6600System():
     """
-        The main CDC 6600 simulation object. This object uses the CDC6600Instr objects to
+        The main CDC 6600 simulation object. This
+        object uses the CDC6600Instr objects to
         generate a timing diagram for the CDC 6600.
     """
 
     def __init__(self,inputVar="X"):
         """
         Constructor for CDC6600System,
-        :param inputVar: Variable string to alter what variable to look for in input equation.
+        :param inputVar: Variable string to alter what
+        variable to look for in input equation.
         """
 
         numAddr = 8
@@ -82,7 +83,8 @@ class CDC6600System():
         self.hardDeps = []
 
         # Used for keeping track of complex instruction objects
-        self.compDict = {'SQU':None,'SCA':None,'CON':None,'OPS':None,'OUT':None}
+        self.compDict = {'SQU':None,'SCA':None,
+                         'CON':None,'OPS':None,'OUT':None}
 
         self.genTimeIdx = 0
 
@@ -128,7 +130,8 @@ class CDC6600System():
         Checks if a given functional unit is busy.
         :param funcUnit: Functional unit to check.
         :param currTime: Given time to compare to functional unit.
-        :return: Bool if currTime is greater than the time a functional unit is busy.
+        :return: Bool if currTime is greater
+        than the time a functional unit is busy.
         """
         waitVal = self.busyUntil[funcUnit]
         return (waitVal > currTime)
@@ -138,19 +141,23 @@ class CDC6600System():
 
     def creatInstrList(self,command, values, varInput):
         """
-        Creates the global instruction list for generating the timing table.
+        Creates the global instruction list for
+        generating the timing table.
         :param command: Input equation.
         :param values: Constant values
         :param varInput: X Variable input value.
         :return: Created instruction list.
         """
         # Move parseandsort to make editing easer
-        instrList = self.parseAndSort(command=command, values=values, varInput=varInput)
+        instrList = self.parseAndSort(command=command,
+                                      values=values,
+                                      varInput=varInput)
         return instrList
 
     def checkResourceConflict(self,instr):
         """
-        Checks for hardware resource conflicts with a given instruction.
+        Checks for hardware resource conflicts
+        with a given instruction.
         :param instr: Input instruction.
         :return:
         """
@@ -165,14 +172,16 @@ class CDC6600System():
 
         if(self.busyUntil[category] > timing):
             instrIdx = self.instrList.index(instr)
-            print("Hardware resource dependancy at instr line %s!" % (instrIdx + 1))
+            print("Hardware resource dependancy at "
+                  "instr line %s!" % (instrIdx + 1))
             lastInstr = self.getLastInstrFunc(instr.category)
             lastInstr.conflictInd['unitReadyTime'] = 1
             instr.conflictInd['startTime'] = 1
             self.hardDeps.append(instrIdx+1)
             return self.busyUntil[category] - timing
         else:
-            self.busyUntil[category] = self.funcUnits[category] + timing + self.unitReadyWait
+            self.busyUntil[category] = self.funcUnits[category] \
+                                       + timing + self.unitReadyWait
             return 0
 
     def checkFuncUnit(self,instr):
@@ -184,11 +193,13 @@ class CDC6600System():
         unitReady = False
         timing = instr.timeDict['issueTime']
         if instr.operator is not None:
-            if "MULTIPLY" != instr.category or instr.category.find("INCR") != -1:
+            if "MULTIPLY" != instr.category or \
+                    instr.category.find("INCR") != -1:
                 if self.busyUntil[instr.category] < timing:
                     unitReady = True
             else:
-                unitReady = True # For CDC6600, only nonmultiply and nonadd units are an issue.
+                unitReady = True # For CDC6600,
+                # only nonmultiply and nonadd units are an issue.
 
 
         return unitReady
