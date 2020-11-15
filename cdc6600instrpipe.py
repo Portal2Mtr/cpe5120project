@@ -53,14 +53,22 @@ def checkDataDepend(self, instr):
         oldStartTime = currStartTime
         currLeftInstr = self.instrList[instr.leftOpIdx]
         currRightInstr = self.instrList[instr.rightOpIdx]
-        currStartTime = max(currLeftInstr.timeDict['resultTime'], currRightInstr.timeDict['resultTime'],
-                            oldStartTime,currLeftInstr.busyUntil,currRightInstr.busyUntil)
+        maxList = [currLeftInstr.timeDict['resultTime'], currRightInstr.timeDict['resultTime'],
+                            oldStartTime,currLeftInstr.busyUntil,currRightInstr.busyUntil]
+        currStartTime = max(maxList)
 
         if currStartTime != oldStartTime:
             # Log data dependancy
             instrIdx = self.instrList.index(instr)
+            instr.conflictInd['startTime'] = 3
             print("Data dependancy at instruction line %s!" % (instrIdx+1))
             if (instrIdx + 1) not in self.dataDeps:
+                maxIndices = [maxList.index(currStartTime)]
+                if 0 in maxIndices:
+                    currLeftInstr.conflictInd['resultTime'] = 3
+                if 1 in maxIndices:
+                    currRightInstr.conflictInd['resultTime'] = 3
+
                 self.dataDeps.append(instrIdx + 1)
 
         # Return time adjustment
@@ -80,6 +88,8 @@ def checkDataDepend(self, instr):
                         instrIdx = self.instrList.index(instr)
                         print("Data dependancy at instruction line %s!" % (instrIdx+1))
                         if (instrIdx+1) not in self.dataDeps:
+                            instr.conflictInd['startTime'] = 3
+                            line.conflictInd['resultTime'] = 3
                             self.dataDeps.append(instrIdx+1)
 
         # Update time adjustment
@@ -167,9 +177,12 @@ def generateTimes(self, instr):
                 # Check if this is the scalar reuse instruction, if so then wait until complete execution of
                 # constant fetching
 
-                print("Data dependancy at instruction line %s!" % (instrIdx + 1))
-                if (instrIdx + 1) not in self.dataDeps:
-                    self.dataDeps.append(instrIdx + 1)
+                # Register reuse, add indicator (2)
+                print("Register reuse at instruction line %s!" % (instrIdx + 1))
+                if (instrIdx + 1) not in self.hardDeps:
+                    instr.conflictInd['issueTime'] = 2
+                    instr.instrManager.instrDict['assign2'].conflictInd['fetchTime'] = 2
+                    self.hardDeps.append(instrIdx + 1)
                 instr.timeDict['issueTime'] = instr.instrManager.instrDict['assign2'].timeDict['fetchTime'] + 1
 
         else:
@@ -181,9 +194,11 @@ def generateTimes(self, instr):
             if not self.checkFuncUnit(instr):
                 # Check if functional unit is fully clear, if not then get fetchTime of last instruction
                 instrIdx = self.instrList.index(instr)
-                print("Hardware esource dependancy at instruction line %s!" % (instrIdx + 1))
+                print("Hardware resource dependancy at instruction line %s!" % (instrIdx + 1))
                 self.hardDeps.append(instrIdx+1)
                 lastInstr = self.getLastInstrFunc(instr.category)
+                lastInstr.conflictInd['unitReadyTime'] = 1
+                instr.conflictInd['issueTime'] = 1
                 instr.timeDict['issueTime'] = lastInstr.timeDict['unitReadyTime']
 
     # Get timing offset for managing resource conflicts

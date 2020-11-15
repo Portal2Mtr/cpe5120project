@@ -64,6 +64,16 @@ class CDC6600Instr():
             "result": ""
         }
 
+        # Color indicators for timing table (see main.py).
+        self.conflictInd = {
+            "issueTime": 0,
+            "startTime": 0,
+            "resultTime": 0,
+            "unitReadyTime": 0,
+            "fetchTime": 0,
+            "storeTime": 0
+        }
+
     def getDesc(self):
         """
         Generates a description about an instruction object for table generation.
