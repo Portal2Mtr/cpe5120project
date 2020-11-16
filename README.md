@@ -11,5 +11,3 @@ generates two time tables (time charts) (similar to the ones discussed in the cl
 notes) in terms of the number of clock pulses showing the time progress of the 
 instructions in the programs.
 
-There is also a report associated with this project (Availible [here](https://www.overleaf.com/project/5f981ec704f32e00018cac9b)).
-
