@@ -1,15 +1,15 @@
 import operator
 
-# Class for handling keeping track of each component's timing in the CDC 6600 system
-class CDC6600System():
+# Class for handling keeping track of each component's timing in the CDC 7600 system
+class CDC7600System():
     """
-        The main CDC 6600 simulation object. This object uses the CDC6600Instr objects to
-        generate a timing diagram for the CDC 6600.
+        The main CDC 7600 simulation object. This object uses the CDC7600Instr objects to
+        generate a timing diagram for the CDC 7600.
     """
 
     def __init__(self,inputVar="X"):
         """
-        Constructor for CDC6600System,
+        Constructor for CDC7600System,
         :param inputVar: Variable string to alter what variable to look for in input equation.
         """
 
@@ -28,11 +28,11 @@ class CDC6600System():
         for i in range(numMem):
             self.memRegs["K" + str(i)] = None
 
-        # Define 6600 wait and Func. Unit Calc times
+        # Define 7600 wait and Func. Unit Calc times
         self.wordSize = 4 # Bytes
         self.shortWait = 1
         self.longWait = 2
-        self.wordWait = 8
+        self.wordWait = 6
         self.unitReadyWait = 1
         self.fetchStoreWait = 4
         self.opMap = {
@@ -42,26 +42,33 @@ class CDC6600System():
         }
         self.funcUnits = {
             "FLADD":4,
-            "MULTIPLY1":10,
-            "MULTIPLY2":10,
-            "DIVIDE":29,
-            "FIXADD":3,
-            "INCR1":3,
-            "INCR2":3,
-            "BOOLEAN":3,
-            "SHIFT":3, # Special case for Fixed point, not used
+            "MULTIPLY":5,
+            "DIVIDE":20,
+            "FIXADD":2,
+            "INCR":2,
+            "BOOLEAN":2,
+            "SHIFT":2,
             "BRANCH":0 # Depends on input type, not used
+        }
+        # Setment times for functional units
+        self.segTime = {
+            "FLADD": 1,
+            "MULTIPLY": 2,
+            "DIVIDE": 18,
+            "FIXADD": 1,
+            "INCR": 1,
+            "BOOLEAN": 1,
+            "SHIFT": 1,  # Special case for Fixed point, not used
+            "BRANCH": 0  # Depends on input type, not used
         }
 
         # Indicators for how long unitl func unit can be used again.
         self.busyUntil = {
             "FLADD": 0,
-            "MULTIPLY1": 0,
-            "MULTIPLY2": 0,
+            "MULTIPLY": 0,
             "DIVIDE": 0,
             "FIXADD": 0,
-            "INCR1": 0,
-            "INCR2": 0,
+            "INCR": 0,
             "BOOLEAN": 0,
             "SHIFT": 0,
             "BRANCH": 0
@@ -87,8 +94,8 @@ class CDC6600System():
         self.genTimeIdx = 0
 
     # Move functions to separate files for cleaner editing
-    from cdc6600score import parseAndSort,eqnAndRegisters
-    from cdc6600instrpipe import performArithmetic,generateTimes,\
+    from cdc7600score import parseAndSort,eqnAndRegisters
+    from cdc7600instrpipe import performArithmetic,generateTimes,\
         cleanUpTimes,checkDataDepend,getTimeFromOp,createDesc
 
     def getEmptyAddr(self):
@@ -101,14 +108,27 @@ class CDC6600System():
                 if self.addrRegs[i] is None:
                     return i
 
-    # Sets addr register to instruction number from instrList
     def setAddrByIdx(self,register,idx):
+        """
+        Sets addr register to instruction index number from instrList.
+        :param register: Register string for indexing.
+        :param idx: index to set address register to.
+        """
         self.addrRegs[register] = idx
 
     def setMemByIdx(self,register,idx):
+        """
+        Sets memory register to instruction index number from instrList.
+        :param register: Register string for indexing.
+        :param idx: Index to set memory address to.
+        """
         self.memRegs[register] = idx
 
     def getEmptyOp(self):
+        """
+        Gets an empty operator register from opRegs dict.
+        :return: Key of empty operator register.
+        """
         for i in self.opRegs.keys():
             if self.opRegs[i] is None:
                 return i
@@ -158,21 +178,20 @@ class CDC6600System():
         timing = instr.timeDict['issueTime']
 
         if (category == "FETCH") or (category == "STORE"):
-            category = self.getAvailIncr()
+            category = 'INCR'
         elif ("MULTIPLY" in category):
-            category = self.getAvailMult()
-            instr.category = category
+            category = 'MULTIPLY'
 
         if(self.busyUntil[category] > timing):
             instrIdx = self.instrList.index(instr)
-            print("Hardware resource dependancy at instr line %s!" % (instrIdx + 1))
-            lastInstr = self.getLastInstrFunc(instr.category)
+            print("Hardware Resource dependancy at instr line %s!" % (instrIdx + 1))
+            lastInstr = self.getLastInstrFunc(instr)
             lastInstr.conflictInd['unitReadyTime'] = 1
-            instr.conflictInd['startTime'] = 1
+            instr.conflictInd['issueTime'] = 1
             self.hardDeps.append(instrIdx+1)
             return self.busyUntil[category] - timing
         else:
-            self.busyUntil[category] = self.funcUnits[category] + timing + self.unitReadyWait
+            # Moving busyuntil to another function
             return 0
 
     def checkFuncUnit(self,instr):
@@ -188,64 +207,47 @@ class CDC6600System():
                 if self.busyUntil[instr.category] < timing:
                     unitReady = True
             else:
-                unitReady = True # For CDC6600, only nonmultiply and nonadd units are an issue.
+                unitReady = True # For CDC7600, only nonmultiply and nonadd units are an issue.
 
 
         return unitReady
 
-    def getLastInstrFunc(self,category):
+    def getLastInstrFunc(self, currInstr):
         """
         Returns the last instruction executed by a functional unit.
         :param category: Functional unit to check
         :return: Instruction that was last executed by functional unit.
         """
+        category = currInstr.category
         if "MULTIPLY" in category:
-            for key,manage in self.compDict.items():
+            for key, manage in self.compDict.items():
                 # Check comp operations for conflicting functional unit times
-                for key2,instr in manage.instrDict.items():
+                for key2, instr in manage.instrDict.items():
                     if instr is not None:
-                        if instr.category == category:
+                        if instr.category == category and instr != currInstr:
                             return instr
         else:
-            for key,manage in self.compDict.items():
+            for key, manage in self.compDict.items():
                 # Check comp operations for conflicting functional unit times
-                for key2,instrList in manage.opDict.items():
+                for key2, instrList in manage.opDict.items():
                     for instr in instrList:
                         if instr is not None:
                             if instr.category == category:
                                 return instr
         return None
 
-    def getCurrIncr(self):
+    def updateBusyUntil(self,instr):
         """
-        Gets the current increment unit that is availible.
-        :return: Increment unit string.
+        Updates the busyUntil dict which manages when functional units can be used again.
+        :param instr: Instruction for timing reference.
         """
-        if self.busyUntil['INCR1'] > self.busyUntil['INCR2']:
-            return 'INCR1'
-        else:
-            return 'INCR2'
+        category = instr.category
 
-    def getAvailIncr(self):
-        """
-        Returns the availible increment unit that is not busy.
-        :return:
-        """
-        if self.busyUntil['INCR1'] <= self.busyUntil['INCR2']:
-            return 'INCR1'
-        else:
-            return 'INCR2'
-
-    def getAvailMult(self):
-        """
-        Returns the avialible multiply unit that is not busy.
-        :return: Multiply unit string.
-        """
-        if self.busyUntil['MULTIPLY1'] <= self.busyUntil['MULTIPLY2']:
-            return 'MULTIPLY1'
-        else:
-            return 'MULTIPLY2'
-
+        if (category == "FETCH") or (category == "STORE"):
+            category = 'INCR'
+        elif ("MULTIPLY" in category):
+            category = 'MULTIPLY'
+        self.busyUntil[category] = instr.timeDict['startTime'] + self.segTime[category]
 
     def compute(self, instr):
         """
