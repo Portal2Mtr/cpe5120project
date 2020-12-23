@@ -1,19 +1,30 @@
-# Class for handling instruction computation for the simulated CDC7600 sytem
 
 class CDC7600Instr():
     """
     Instruction object for simulated CDC 7600
     """
 
-    def __init__(self, varName=None, category=None, system=None,instrManager=None, value=None,operator=None):
+    def __init__(self, varName=None,
+                 category=None,
+                 system=None,
+                 instrManager=None,
+                 value=None,
+                 operator=None):
         """
         Constructor for instruction object.
-        :param varName: Variable name to refer to the instruction by.
-        :param category: Type of instruction (types=['FETCH','STORE',*insert func units*]
-        :param system: CDC 6600/7600 simulation system
-        :param instrManager: Manager for handling interinstruction calculations
-        :param value: Integer value for simulation calculations
-        :param operator: Operator for calculating instruction, may be None for fetch instruction
+        :param varName: Variable name
+         to refer to the instruction by.
+        :param category: Type of instruction
+         (types=['FETCH','STORE',*insert func units*]
+        :param system: CDC 6600/7600
+        simulation system
+        :param instrManager: Manager
+        for handling interinstruction calculations
+        :param value: Integer value
+        for simulation calculations
+        :param operator: Operator for
+         calculating instruction, may be
+         None for fetch instruction
         """
 
         # General instruction variables
@@ -39,7 +50,8 @@ class CDC7600Instr():
         if self.operator is not None:
             self.category = system.getFuncFromOp(self.operator)
 
-        # All nonfunctional unit instructions are long, all functional units are short
+        # All nonfunctional unit
+        # instructions are long, all functional units are short
         longCats = ["FETCH","STORE"]
         if self.category in longCats:
             self.instrType = "LONG"
@@ -56,7 +68,8 @@ class CDC7600Instr():
             "storeTime": 0
         }
 
-        # Dict for handling instruction simulation register values
+        # Dict for handling
+        # instruction simulation register values
         self.instrRegs = {
             "leftOp": "",
             "operand":"",
@@ -76,8 +89,10 @@ class CDC7600Instr():
 
     def getDesc(self):
         """
-        Generates a description about an instruction object for table generation.
-        :return: List of instruction values for table generation.
+        Generates a description about an
+         instruction object for table generation.
+        :return: List of instruction
+        values for table generation.
         """
         outputArray = []
         outputArray.append(self.system.instrList.index(self) + 1)
@@ -102,15 +117,21 @@ class CDC7600Instr():
 
     def genEqn(self):
         """
-        Generates a string equation for a given instruction from self.instrRegs.
+        Generates a string equation for a given
+         instruction from self.instrRegs.
         """
-        self.equation = self.instrRegs['result']+"=" + self.instrRegs['leftOp'] + self.instrRegs['operand'] + self.instrRegs['rightOp']
+        self.equation = self.instrRegs['result']+"=" \
+                        + self.instrRegs['leftOp'] \
+                        + self.instrRegs['operand']\
+                        + self.instrRegs['rightOp']
 
     def assignOpVarIdx(self,leftIdx,rightIdx):
         """
         Assigns indices for operation left/right values.
-        :param leftIdx: Left instruction index in self.system.instrList.
-        :param rightIdx: Right instruction index in self.system.instrList.
+        :param leftIdx: Left instruction
+         index in self.system.instrList.
+        :param rightIdx: Right instruction
+        index in self.system.instrList.
         """
         self.leftOpIdx = leftIdx
         self.rightOpIdx = rightIdx
@@ -136,7 +157,8 @@ class CDC7600Instr():
 
     def replaceInMan(self,newInstr):
         """
-        Replaces self in self.instrManager with a different instruction. Used
+        Replaces self in self.instrManager
+        with a different instruction. Used
         to remove duplicate X Fetch instructions.
         :param newInstr: New instruction to replace old one.
         """
@@ -148,7 +170,8 @@ class CDC7600Instr():
 
     def updateManIdx(self,idx):
         """
-        Updates the given instruction's index in self.instrManager
+        Updates the given instruction's
+        index in self.instrManager
         :param idx: New index for manager.
         """
         if self.instrManager.manageType != "OPERATIONS":
@@ -169,6 +192,9 @@ class CDC7600Instr():
         return self.varName
 
     def __eq__(self, other):
-        # Used in instruction manager to ensure correct instruction object is chosen.
-        return str(other.instrManager) == str(self.instrManager) and other.varName == self.varName and \
+        # Used in instruction manager to
+        # ensure correct instruction object is chosen.
+        return str(other.instrManager) == \
+               str(self.instrManager) and\
+               other.varName == self.varName and \
                other.currWord == self.currWord

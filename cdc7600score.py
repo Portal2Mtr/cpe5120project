@@ -6,9 +6,13 @@ Functions for the CDC 7600 representing Scoreboard computations
 (parsing data and managing instruction meta generation).
 """
 
-def parseAndSort(self, command="Y = AXS + BX + C", values={"A": 1, "B": 2, "C": 3}, varInput=0):
+def parseAndSort(self,
+                 command="Y = AXS + BX + C",
+                 values={"A": 1, "B": 2, "C": 3},
+                 varInput=0):
     """
-    Creates instruction objects based on input equation, no calculations or generating new data,
+    Creates instruction objects based on
+     input equation, no calculations or generating new data,
     which is handled in the 'compute' function.
     :param self: CDC7600System
     :param command: Input equation
@@ -26,88 +30,114 @@ def parseAndSort(self, command="Y = AXS + BX + C", values={"A": 1, "B": 2, "C": 
     specials = [c for c in inputs if not c.isalpha()]
     print("Setting up instructions...")
     # Setup instruction list
-    # Sort separated inputs based on type and create managers for handling instruction output order.
+    # Sort separated inputs based on type
+    # and create managers for handling instruction output order.
     for entry in inputVars:
         if len(entry) == 1:
-            self.compDict['CON'] = instrManager(compInstr=entry,manageType='CONSTANT',system=self)
+            self.compDict['CON'] = \
+                instrManager(compInstr=entry,
+                             manageType='CONSTANT',
+                             system=self)
         if len(entry) == 2:
-            self.compDict['SCA'] = instrManager(compInstr=entry,manageType='SCALAR',system=self)
+            self.compDict['SCA'] = \
+                instrManager(compInstr=entry,
+                             manageType='SCALAR',
+                             system=self)
         if len(entry) == 3:
-            self.compDict['SQU'] = instrManager(compInstr=entry,manageType='SQUARE',system=self)
+            self.compDict['SQU'] = \
+                instrManager(compInstr=entry,
+                             manageType='SQUARE',
+                             system=self)
 
     # Make output manager
-    self.compDict['OUT'] = instrManager(compInstr=outputVar, manageType='OUTPUT',system=self)
+    self.compDict['OUT'] = \
+        instrManager(compInstr=outputVar,
+                     manageType='OUTPUT',
+                     system=self)
 
     for idx, entry in enumerate(inputVars):
-        # Setup Assignment and operator instructions for instruction managers
+        # Setup Assignment and operator
+        # instructions for instruction managers
         if self.inputVar in entry:
-            # Check if variable is in a given string input
+            # Check if variable is in a
+            # given string input
             varEntry = inputVars[idx]
             if len(varEntry) == 3: #AXS Form
-                # Setup instructions for instruction manager and parse variables
+                # Setup instructions for
+                # instruction manager and parse variables
                 workMan = self.compDict['SQU']
                 multScal = varEntry[0]
                 var = varEntry[1]
 
                 # Setup Fetches
                 # assign1 in variable
-                workMan.instrDict['assign1'] = CDC7600Instr(varName=var,
-                                                  category="FETCH",
-                                                  system=self,
-                                                  value=varInput,
-                                                  instrManager=workMan)
-                workMan.instrDict['assign2'] = CDC7600Instr(varName=multScal,
-                                                  category="FETCH",
-                                                  system=self,
-                                                  value=values[multScal],
-                                                  instrManager=workMan)
+                workMan.instrDict['assign1'] = \
+                    CDC7600Instr(varName=var,
+                                 category="FETCH",
+                                 system=self,
+                                 value=varInput,
+                                 instrManager=workMan)
+                workMan.instrDict['assign2'] =\
+                    CDC7600Instr(varName=multScal,
+                                 category="FETCH",
+                                 system=self,
+                                 value=values[multScal],
+                                 instrManager=workMan)
                 # Setup Operators
-                workMan.instrDict['square'] = CDC7600Instr(varName='*s',
-                                                 category="",
-                                                 system=self,
-                                                 operator='*',
-                                                 instrManager=workMan)
+                workMan.instrDict['square'] = \
+                    CDC7600Instr(varName='*s',
+                                 category="",
+                                 system=self,
+                                 operator='*',
+                                 instrManager=workMan)
 
-                workMan.instrDict['scalMult'] = CDC7600Instr(varName='*',
-                                                 category="",
-                                                 system=self,
-                                                 operator='*',
-                                                 instrManager=workMan)
+                workMan.instrDict['scalMult'] = \
+                    CDC7600Instr(varName='*',
+                                 category="",
+                                 system=self,
+                                 operator='*',
+                                 instrManager=workMan)
 
             elif len(varEntry) == 2:  # BX form
-                # Setup instructions for instruction manager and parse variables
+                # Setup instructions for
+                # instruction manager and parse variables
                 workMan = self.compDict['SCA']
                 multScal = varEntry[0]
                 var = varEntry[1]
                 # Setup Fetches
                 # assign1 in variable
-                workMan.instrDict['assign1'] = CDC7600Instr(varName=var,
-                                                            category="FETCH",
-                                                            system=self,
-                                                            value=varInput,
-                                                            instrManager=workMan)
-                workMan.instrDict['assign2'] = CDC7600Instr(varName=multScal,
-                                                            category="FETCH",
-                                                            system=self,
-                                                            value=values[multScal],
-                                                            instrManager=workMan)
+                workMan.instrDict['assign1'] = \
+                    CDC7600Instr(varName=var,
+                                 category="FETCH",
+                                 system=self,
+                                 value=varInput,
+                                 instrManager=workMan)
+                workMan.instrDict['assign2'] =\
+                    CDC7600Instr(varName=multScal,
+                                 category="FETCH",
+                                 system=self,
+                                 value=values[multScal],
+                                 instrManager=workMan)
                 # Setup Operators
-                workMan.instrDict['scalMult'] = CDC7600Instr(varName='*',
-                                                             category="",
-                                                             system=self,
-                                                             operator='*',
-                                                             instrManager=workMan)
+                workMan.instrDict['scalMult'] =\
+                    CDC7600Instr(varName='*',
+                                 category="",
+                                 system=self,
+                                 operator='*',
+                                 instrManager=workMan)
         else:
             # No variable, constant
             workMan = self.compDict['CON']
             # Setup Fetches
-            workMan.instrDict['assign1'] = CDC7600Instr(varName=entry,
-                                                        category="FETCH",
-                                                        system=self,
-                                                        value=varInput,
-                                                        instrManager=workMan)
+            workMan.instrDict['assign1'] = \
+                CDC7600Instr(varName=entry,
+                             category="FETCH",
+                             system=self,
+                             value=varInput,
+                             instrManager=workMan)
 
-    # Setup operators for between instruction managers based on broken input equation
+    # Setup operators for between instruction
+    # managers based on broken input equation
     self.compDict['OPS'] = instrManager("OPS","OPERATIONS",self)
     for entry in set(specials):
         # Iterate through btwn manager operations (pluses)
@@ -116,7 +146,8 @@ def parseAndSort(self, command="Y = AXS + BX + C", values={"A": 1, "B": 2, "C": 
         for occur in entIdx:
             leftVar = brokenInput[occur-1]
             rightVar = brokenInput[occur + 1]
-            opArray = [None,None] # Two entries for left and right operation variables
+            opArray = [None,None] # Two entries
+            # for left and right operation variables
             # Get complex instructions to do operations on
             for key,value in self.compDict.items():
                 if value is not None: # Handle for no constant case
@@ -126,15 +157,17 @@ def parseAndSort(self, command="Y = AXS + BX + C", values={"A": 1, "B": 2, "C": 
                     elif inVar == rightVar:
                         opArray[1] = rightVar
             allOpArray.append(opArray)
-        self.compDict['OPS'].mangOps[entry] = allOpArray # Store btwn instr manager operations in order
+        self.compDict['OPS'].mangOps[entry] = allOpArray
+        # Store btwn instr manager operations in order
         storeOpArray = []
         storeOpArrayIdx = []
         for calc in allOpArray:
-            storeOpArray.append(CDC7600Instr(varName=entry,
-                                                          category="",
-                                                          system=self,
-                                                          instrManager=self.compDict['OPS'],
-                                                            operator=entry))
+            storeOpArray.append(CDC7600Instr(
+                varName=entry,
+                category="",
+                system=self,
+                instrManager=self.compDict['OPS'],
+                operator=entry))
             storeOpArrayIdx.append(None)
         self.compDict['OPS'].opDict[entry] = storeOpArray
         self.compDict['OPS'].opDictIdx[entry] = storeOpArrayIdx
@@ -175,7 +208,8 @@ def parseAndSort(self, command="Y = AXS + BX + C", values={"A": 1, "B": 2, "C": 
 
     # Sort on preferred order
     # Sort inputs by putting X first then go by alphabet
-    corrOrder = ['X', 'A', 'B', 'C']  # Simple alpha sorting, too lazy to do it properly
+    corrOrder = ['X', 'A', 'B', 'C']
+    # Simple alpha sorting, too lazy to do it properly
     corrIdx = []
     tempList = [str(i) for i in fetchList]
     for entry in corrOrder:
@@ -212,7 +246,8 @@ def parseAndSort(self, command="Y = AXS + BX + C", values={"A": 1, "B": 2, "C": 
             if val.instrDict['output'] is not None:
                 instrList.append(val.instrDict['output'])
 
-    # Conduct final sorting, get more optimized output table and determine equation mode (constant or not)
+    # Conduct final sorting, get more optimized
+    # output table and determine equation mode (constant or not)
     instrList = optimizeList(instrList,inputVars)
 
     # Add indices to managers, instruction list should be complete and ordered!
@@ -223,9 +258,11 @@ def parseAndSort(self, command="Y = AXS + BX + C", values={"A": 1, "B": 2, "C": 
     # Update indices for operation managers
     compOpList = []
     for instr in instrList:
-        if instr.operator is not None and instr.instrManager.manageType != "OPERATIONS":
+        if instr.operator is not None and\
+                instr.instrManager.manageType != "OPERATIONS":
             instr.instrManager.linkInstr(instr)
-        elif instr.operator is not None and instr.instrManager.manageType == "OPERATIONS":
+        elif instr.operator is not None and\
+                instr.instrManager.manageType == "OPERATIONS":
             # Get all comp operations
             compOpList.append(instr)
 
@@ -278,7 +315,9 @@ def eqnAndRegisters(self,instr):
         instr.instrRegs['rightOp'] = "K" + str(currIdx)
         instr.instrRegs['operand'] = "+"
         instr.genEqn()
-        instr.descRegisters = instr.instrRegs['result'] + ",X" + instr.instrRegs['result'][-1]
+        instr.descRegisters =\
+            instr.instrRegs['result'] + ",X"\
+            + instr.instrRegs['result'][-1]
         instr.removeDescDuplicates()
         return
 
@@ -301,20 +340,25 @@ def eqnAndRegisters(self,instr):
         instr.instrRegs['operand'] = "+"
         self.memRegs[emptyMem] = self.instrList.index(instr)
         # Update output register and check if x6 is used
-        # After instructions for nonmem operators, set as A6 or A7 (from wikipedia), A7 if A6 used
+        # After instructions for nonmem operators,
+        # set as A6 or A7 (from wikipedia), A7 if A6 used
         if self.opRegs['X6'] is not None:
             instr.instrRegs['result'] = 'A7'
         else:
             instr.instrRegs['result'] = 'A6'
         instr.genEqn()
-        instr.descRegisters = instr.instrRegs['result'] + ",X" + instr.instrRegs['result'][-1] + "," + opResult
+        instr.descRegisters = instr.instrRegs['result'] +\
+                              ",X" + \
+                              instr.instrRegs['result'][-1] \
+                              + "," + opResult
         instr.removeDescDuplicates()
         return
 
     #Operation instructions
     instr.instrManager.genOpEqn(instr)
     instr.genEqn()
-    instr.descRegisters = instr.instrRegs['leftOp'] + "," + instr.instrRegs['rightOp'] \
+    instr.descRegisters = instr.instrRegs['leftOp']\
+                          + "," + instr.instrRegs['rightOp'] \
                           + "," + instr.instrRegs['result']
     instr.removeDescDuplicates()
 
@@ -344,7 +388,8 @@ def optimizeList(instrList, inputVars):
         instrList = [instrList[i] for i in newIdxs]
 
     else:
-        preferredOrder = ['X', 'A', '*s', '*1', 'B', 'C', '*2', '+1', '+2', 'Y']
+        preferredOrder = ['X', 'A', '*s',
+                          '*1', 'B', 'C', '*2', '+1', '+2', 'Y']
         oldOrder = [i.varName for i in instrList]
         # Assign enum to multiply
         multenum = 1

@@ -1,22 +1,26 @@
 from prettytable import PrettyTable
+from tableFormats import latexTable
 from cdc6600system import CDC6600System
 from cdc7600system import CDC7600System
 
 """
-    This is the CDC 6600/7600 simulation project for Anh Nguyen and Charles Rawlins.
-    This code takes a given input string and generates two tables to stdout showing
-    the execution timing for a given equation broken down into instructions. 
-    Unfortunately, due to time restrains, this simulation does not support vector 
-    operations, so only the two scalar input test equations are implemented.
-    The program takes an input selection from the user for which equation to conduct
-    tests with. 
+    This is the CDC 6600/7600 simulation project for Anh Nguyen
+    and Charles Rawlins. This code takes a given input string 
+    and generates two tables to stdout showing the execution 
+    timing for a given equation broken down into instructions. 
+    Unfortunately, due to time restrains, this simulation does 
+    not support vector operations, so only the two scalar input 
+    test equations are implemented. The program takes an input 
+    selection from the user for which equation to conduct tests with. 
 """
 
 def getInputEqn():
     """
-        Creates a dialogue with the user to generate the input equation for simulation
+        Creates a dialogue with the user to generate the
+         input equation for simulation
 
-        :return: xinput (Value for x variable), selEqn (Equation selected from list)
+        :return: xinput (Value for x variable),
+        selEqn (Equation selected from list)
     """
     eqns = ["Y = AX^2 + BX","Y = AX^2 + BX + C"]
 
@@ -31,20 +35,20 @@ def getInputEqn():
     selEqn = selEqn.replace("^2","S")
     xinput = int(input("Enter value for X:"))
 
-    return xinput,selEqn
+    return xinput,selEqn,eqnSel
 
 
 if __name__ == "__main__":
     """
-        Main function for conducting simulation. Input equations were tested using
-        Python 3.8.
+        Main function for conducting simulation. 
+        Input equations were tested using Python 3.8.
     """
     print("Welcome! This program simulates the timing diagrams for\n"
           "the CDC6600/7600 systems! Please select your input equation.\n"
           "NOTE: Vectors are not supported for this version of the project.")
 
     # Generate System object for generating timing diagram
-    xinput,selEqn= getInputEqn()
+    xinput,selEqn,eqnSel= getInputEqn()
 
     # Constant values for equation calculations can be manipulated here.
     scalarValues = {"A": 1, "B": 2, "C": 3}
@@ -57,9 +61,12 @@ if __name__ == "__main__":
     # 1 = unitbusy, 2 = register reuse,3 = data dependancy (RAW)
     conflictInds ={'1':R,'2':G,'3':B}
 
-    print('######################################################################################')
-    print('                                      CDC 6600                                        ')
-    print('######################################################################################')
+    print('#########################################'
+          '#############################################')
+    print('                                      '
+          'CDC 6600                                        ')
+    print('#######################################'
+          '###############################################')
     cdc6600 = CDC6600System()
 
     # Get input and parse instuctions
@@ -81,23 +88,35 @@ if __name__ == "__main__":
     print("---------------------------------------------------")
     # Create table based on in-class examples
     print("Creating table for CDC 6600...")
-    print("KEY:" + R + " Unit Busy " + N + G + " Register Reuse " + N + B + " Data Dependancy " + N)
+    print("KEY:" + R + " Unit Busy " + N + G +
+          " Register Reuse " + N + B + " Data Dependancy " + N)
     x = PrettyTable()
-    x.field_names = ["Instr. #", "Word","Eqn.","Desc.", "Instr. Type","Issue","Start",
-                     "Result","Unit Ready","Fetch","Store","Func. Unit","Registers"]
+    xplain = PrettyTable()
+    x.field_names = ["Instr. #", "Word","Eqn.","Desc.",
+                     "Instr. Type","Issue","Start",
+                     "Result","Unit Ready","Fetch",
+                     "Store","Func. Unit","Registers"]
+    xplain.field_names = ["Instr. #", "Word", "Eqn.", "Desc.",
+                          "Instr. Type", "Issue", "Start",
+                          "Result", "Unit Ready", "Fetch",
+                          "Store", "Func. Unit", "Registers"]
     descOffset = 5
     for instr in instrList:
         workDesc = instr.getDesc()
         for idx,(key,val) in enumerate(instr.conflictInd.items()):
             if str(val) in conflictInds.keys():
-                workDesc[idx + descOffset] = conflictInds[str(val)] + workDesc[idx + descOffset] + N
+                workDesc[idx + descOffset] = \
+                    conflictInds[str(val)] + \
+                    workDesc[idx + descOffset] + N
         x.add_row(workDesc)
+        xplain.add_row(instr.getDesc())
     print(x.get_string())
 
     # Print out equation output values
     print("---------------------------------------------------")
     outputInstr = instrList[-1]
-    print("Equation Result: " +outputInstr.varName + " = " + str(outputInstr.value))
+    print("Equation Result: " +
+          outputInstr.varName + " = " + str(outputInstr.value))
 
     # Print out performance analysis with resource conflicts
     print("---------------------------------------------------")
@@ -113,9 +132,12 @@ if __name__ == "__main__":
         print("No detected data dependencies!")
     print("---------------------------------------------------")
 
-    print('######################################################################################')
-    print('                                      CDC 7600                                        ')
-    print('######################################################################################')
+    print('##################################'
+          '####################################################')
+    print('                                      '
+          'CDC 7600                                        ')
+    print('#####################################'
+          '#################################################')
 
     cdc7600 = CDC7600System()
 
@@ -138,23 +160,35 @@ if __name__ == "__main__":
     print("---------------------------------------------------")
     # Create table based on in-class examples
     print("Creating table for CDC 7600...")
-    print("KEY:" + R + " Unit Busy " + N + G + " Register Reuse " + N + B + " Data Dependancy " + N)
-    x = PrettyTable()
-    x.field_names = ["Instr. #", "Word", "Eqn.", "Desc.", "Instr. Type", "Issue", "Start",
-                     "Result", "Unit Ready", "Fetch", "Store", "Func. Unit", "Registers"]
+    print("KEY:" + R + " Unit Busy " + N + G +
+          " Register Reuse " + N + B + " Data Dependancy " + N)
+    y = PrettyTable()
+    yplain = PrettyTable()
+    y.field_names = ["Instr. #", "Word", "Eqn.", "Desc.",
+                     "Instr. Type", "Issue", "Start",
+                     "Result", "Unit Ready", "Fetch",
+                     "Store", "Func. Unit", "Registers"]
+    yplain.field_names = ["Instr. #", "Word", "Eqn.",
+                          "Desc.", "Instr. Type", "Issue", "Start",
+                     "Result", "Unit Ready", "Fetch",
+                          "Store", "Func. Unit", "Registers"]
     descOffset = 5
     for instr in instrList:
         workDesc = instr.getDesc()
         for idx, (key, val) in enumerate(instr.conflictInd.items()):
             if str(val) in conflictInds.keys():
-                workDesc[idx + descOffset] = conflictInds[str(val)] + workDesc[idx + descOffset] + N
-        x.add_row(workDesc)
-    print(x.get_string())
+                workDesc[idx + descOffset] = \
+                    conflictInds[str(val)] + \
+                    workDesc[idx + descOffset] + N
+        y.add_row(workDesc)
+        yplain.add_row(instr.getDesc())
+    print(y.get_string())
 
     # Print out equation output values
     print("---------------------------------------------------")
     outputInstr = instrList[-1]
-    print("Equation Result: " + outputInstr.varName + " = " + str(outputInstr.value))
+    print("Equation Result: " + outputInstr.varName
+          + " = " + str(outputInstr.value))
 
     # Print out performance analysis with resource conflicts
     print("---------------------------------------------------")
@@ -169,3 +203,18 @@ if __name__ == "__main__":
     else:
         print("No detected data dependencies!")
     print("---------------------------------------------------")
+
+    # Output to text file with latex tables
+    f = open("./cdc6600.txt", "w")
+    f.write(latexTable(xplain,caption='CDC 6600 Timing'
+                                      ' Diagram (Equation ' +
+                                      str(eqnSel)+ ")",
+                       label='tab:cdc6600').get_string())
+    f.close()
+
+    f = open("./cdc7600.txt", "w")
+    f.write(latexTable(yplain,
+                       caption='CDC 6600 Timing Diagram'
+                        ' (Equation ' + str(eqnSel) + ")",
+                       label='tab:cdc7600').get_string())
+    f.close()

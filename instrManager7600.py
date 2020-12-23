@@ -1,7 +1,8 @@
 
 class instrManager():
     """
-    Manager object for handling interinstruction calculations. Greatly simplifies instrcution
+    Manager object for handling interinstruction
+    calculations. Greatly simplifies instrcution
     indexing and calculation handling.
     """
 
@@ -18,10 +19,22 @@ class instrManager():
         self.system = system
 
         # Dict of managment instructions objects, assign1 is variable
-        self.instrDict = {'assign1':None,'assign2':None,'scalMult':None,'square':None,'output':None}
+        self.instrDict = {'assign1':None,
+                          'assign2':None,
+                          'scalMult':None,
+                          'square':None,
+                          'output':None}
         # Dict of managment instructions list indices for cdc7600system instrList
-        self.instrDictIdxs = {'assign1':None,'assign2':None,'scalMult':None,'square':None,'output':None}
-        self.instrInOthers = {'assign1':False,'assign2':False,'scalMult':False,'square':False,'output':False}
+        self.instrDictIdxs = {'assign1':None,
+                              'assign2':None,
+                              'scalMult':None,
+                              'square':None,
+                              'output':None}
+        self.instrInOthers = {'assign1':False,
+                              'assign2':False,
+                              'scalMult':False,
+                              'square':False,
+                              'output':False}
         self.opDict = {}
         self.opDictIdx = {}
         self.mangOps = {}
@@ -108,10 +121,14 @@ class instrManager():
         """
         # Perform all calculations here
         if self.manageType == "SCALAR":
-            self.instrDict['scalMult'].value = self.instrDict['assign1'].value * self.instrDict['assign2'].value
+            self.instrDict['scalMult'].value \
+                = self.instrDict['assign1'].value \
+                  * self.instrDict['assign2'].value
             return self.instrDict['scalMult'].value
         elif self.manageType == "SQUARE":
-            return self.instrDict['assign1'].value * self.instrDict['assign1'].value * self.instrDict['assign2'].value
+            return self.instrDict['assign1'].value\
+                   * self.instrDict['assign1'].value \
+                   * self.instrDict['assign2'].value
         elif self.manageType == 'OUTPUT':
             return self.instrDict['output'].value
         else:
@@ -154,7 +171,8 @@ class instrManager():
         self.system.opRegIdx += 1
 
         # Get instr object from manager
-        if instr.operator == '+': # Check if last addition, if so output to X7 if x6 is full
+        if instr.operator == '+':
+            # Check if last addition, if so output to X7 if x6 is full
 
             if self.system.instrList[-2] is instr:
                 # Last addition
@@ -167,7 +185,8 @@ class instrManager():
         else:
             # Check if this is scalar multiple, if so reuse assignment register
             if self.manageType == "SCALAR":
-                reuseMem = 'X' + self.instrDict['assign2'].instrRegs['result'][-1]
+                reuseMem = 'X' + \
+                    self.instrDict['assign2'].instrRegs['result'][-1]
                 opAddr = reuseMem
             else:
                 opAddr = self.system.opRegsList[self.system.opRegIdx]
@@ -177,8 +196,10 @@ class instrManager():
 
         self.system.opRegs[opAddr] = self.instrDictIdxs[key]
 
-        leftAddr = self.system.instrList[instr.leftOpIdx].instrRegs['result']
-        rightAddr = self.system.instrList[instr.rightOpIdx].instrRegs['result']
+        leftAddr =\
+            self.system.instrList[instr.leftOpIdx].instrRegs['result']
+        rightAddr = \
+            self.system.instrList[instr.rightOpIdx].instrRegs['result']
 
         if 'A' in leftAddr:
             leftAddr = leftAddr.replace('A','X')
@@ -191,14 +212,17 @@ class instrManager():
 
     def linkInstr(self,instr):
         """
-         Generate left/right idxs from instruction list for equation generation from within manager
+         Generate left/right idxs
+          from instruction list for equation
+          generation from within manager
         :param instr: Input instruction
         :return:
         """
 
         for key,val in self.instrDict.items():
             if val is not None:
-                if val.varName == instr.varName: # Instr may belong to other manager
+                if val.varName == instr.varName:
+                    # Instr may belong to other manager
                     workInstr = val
                     workKey = key
                     break
@@ -210,7 +234,8 @@ class instrManager():
             leftOpIdx = self.instrDictIdxs['assign1']
             rightOpIdx = leftOpIdx
             workInstr.assignOpVarIdx(leftOpIdx,rightOpIdx)
-        elif workKey == 'scalMult' and self.manageType == 'SQUARE': # Link scalar multiply to output of square register
+        elif workKey == 'scalMult' and self.manageType == 'SQUARE':
+            # Link scalar multiply to output of square register
             leftOpIdx = self.instrDictIdxs['square']
             rightOpIdx = self.instrDictIdxs['assign2']
             workInstr.assignOpVarIdx(leftOpIdx, rightOpIdx)
@@ -221,7 +246,8 @@ class instrManager():
 
     def updateIdxs(self,instrList):
         """
-        Update the indices within the manager with those in the instruction list.
+        Update the indices within the manager
+        with those in the instruction list.
         :param instrList:
         :return:
         """
@@ -231,12 +257,16 @@ class instrManager():
                 if instr is not None:
                     for idx,entry in enumerate(instrList):
                         # Catch for getting X in both managers
-                        if entry == instr or (instr.varName == entry.varName and entry.instrManager.instrInOthers[key]):
+                        if entry == instr or \
+                                (instr.varName ==
+                                 entry.varName and
+                                 entry.instrManager.instrInOthers[key]):
                             self.instrDictIdxs[key] = idx
         else:
             for key, group in self.opDict.items():
                 instr = group[0]
-                idxs = [idx for idx,entry in enumerate(instrList) if entry == instr]
+                idxs = [idx for idx,entry
+                        in enumerate(instrList) if entry == instr]
                 self.opDictIdx[key] = idxs
 
     def getLastCalcOut(self,instrList):
@@ -254,10 +284,13 @@ class instrManager():
 
     def updateCompOpIdxs(self,compOpList):
         """
-        For each complex operation instruction (addition), correctly gives the output
-        instruction index in the instruction list for proper instruction equation
+        For each complex operation
+        instruction (addition), correctly gives the output
+        instruction index in the
+        instruction list for proper instruction equation
         generation.
-        :param compOpList: List of operations using the complex instructions.
+        :param compOpList: List
+        of operations using the complex instructions.
         """
         workOps = self.mangOps[compOpList[0].varName]
         mangDict = self.system.compDict
@@ -291,13 +324,17 @@ class instrManager():
                 if workIdx == 0: # leftopidx is from previous comp calc
                     currWorkInstr = compOpList[idx]
                     leftIdx = self.opDictIdx[compOpList[0].varName][0]
-                    rightMang = [val for key, val in mangDict.items() if val.compInstr == currWorkOps[1]]
+                    rightMang = [val for key,
+                                         val in
+                                 mangDict.items() if val.compInstr == currWorkOps[1]]
                     rightIdx = rightMang[0].getOutputIdx()
                     currWorkInstr.assignOpVarIdx(leftIdx, rightIdx)
                 else: # rightopidx is from previous comp calc
                     currWorkInstr = compOpList[idx]
                     leftIdx = leftMang[0].getOutputIdx()
-                    rightMang = [val for key, val in mangDict.items() if val.compInstr == currWorkOps[1]]
+                    rightMang = [val for key, val in
+                                 mangDict.items() if
+                                 val.compInstr == currWorkOps[1]]
                     rightIdx = self.opDictIdx[compOpList[0].varName][0]
                     currWorkInstr.assignOpVarIdx(leftIdx, rightIdx)
 
