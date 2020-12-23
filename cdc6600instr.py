@@ -185,3 +185,61 @@ class CDC6600Instr():
                str(self.instrManager) \
                and other.varName == self.varName and \
                other.currWord == self.currWord
+
+    def removeDescDuplicates(self):
+        """
+        Removes duplicate registers from self.descRegisters.
+        """
+        origDesc = self.descRegisters
+        regs = origDesc.split(",")
+        setRegs = list(set(regs)) # Remove all duplicate registers
+        newDesc = ",".join(setRegs)
+        self.descRegisters = newDesc
+
+        # Remove current instruction from its manager
+    def removeFromMan(self):
+        """
+        Removes this instruction (self) from its own manager. (unused)
+        """
+        for key, val in self.instrManager.instrDict.items():
+            if val == self:
+                self.instrManager.instrDict[key] = None
+
+    def replaceInMan(self,newInstr):
+        """
+        Replaces self in self.instrManager with a different instruction. Used
+        to remove duplicate X Fetch instructions.
+        :param newInstr: New instruction to replace old one.
+        """
+        for key,val in self.instrManager.instrDict.items():
+            if val is not None:
+                if val == self:
+                    self.instrManager.instrDict[key] = newInstr
+                    self.instrManager.instrInOthers[key] = True
+
+    def updateManIdx(self,idx):
+        """
+        Updates the given instruction's index in self.instrManager
+        :param idx: New index for manager.
+        """
+        if self.instrManager.manageType != "OPERATIONS":
+            # Update instrDict with new index
+            for key, val in self.instrManager.instrDict.items():
+                if val is not None:
+                    if val.varName == self.varName:
+                        self.instrManager.instrDictIdxs[key] = idx
+        else:
+            # Update index in opDict by getting instruction operator
+            for key, val in self.instrManager.opDict.items():
+                # Get operator occurances
+                for idx,entry in enumerate(val):
+                    if entry == self:
+                        self.instrManager.opDictIdx[key][idx] = idx
+
+    def __str__(self):
+        return self.varName
+
+    def __eq__(self, other):
+        # Used in instruction manager to ensure correct instruction object is chosen.
+        return str(other.instrManager) == str(self.instrManager) and other.varName == self.varName and \
+               other.currWord == self.currWord

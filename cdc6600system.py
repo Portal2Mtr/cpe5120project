@@ -1,6 +1,7 @@
-import operator
+from cdc6600instr import CDC6600Instr
 
 class CDC6600System():
+
     """
         The main CDC 6600 simulation object. This
         object uses the CDC6600Instr objects to
@@ -14,6 +15,7 @@ class CDC6600System():
         variable to look for in input equation.
         """
 
+    def __init__(self):
         numAddr = 8
         numOp = 8
         numMem = 8
@@ -37,12 +39,10 @@ class CDC6600System():
         self.unitReadyWait = 1
         self.fetchStoreWait = 4
         self.opMap = {
-            "+":"FLADD",
-            "-":"FLADD",
-            "*":"MULTIPLY"
+            "+":"FPADD"
         }
         self.funcUnits = {
-            "FLADD":4,
+            "FPADD":3,
             "MULTIPLY1":10,
             "MULTIPLY2":10,
             "DIVIDE":29,
@@ -50,13 +50,11 @@ class CDC6600System():
             "INCR1":3,
             "INCR2":3,
             "BOOLEAN":3,
-            "SHIFT":3, # Special case for Fixed point, not used
-            "BRANCH":0 # Depends on input type, not used
+            "SHIFT":3, # TODO: Special case for FP
+            "BRANCH":0 # TODO: Depends on input
         }
-
-        # Indicators for how long unitl func unit can be used again.
         self.busyUntil = {
-            "FLADD": 0,
+            "FPADD": 0,
             "MULTIPLY1": 0,
             "MULTIPLY2": 0,
             "DIVIDE": 0,
@@ -68,11 +66,11 @@ class CDC6600System():
             "BRANCH": 0
         }
         self.instrList = []
-        self.opRegsList = ['X0','X6','X0','X5','X7']
-        self.opRegIdx = -1
+        self.opMRU = None # Set most recently used op address for calculations
 
-        # Setup simulation vars
+        # Setup simulation vars TODO
         self.currWordTimes = {}
+
         self.ops = {"+": operator.add,
                "-": operator.sub,
                "*":operator.mul}  # etc.
@@ -93,11 +91,8 @@ class CDC6600System():
     from cdc6600instrpipe import performArithmetic,generateTimes,\
         cleanUpTimes,checkDataDepend,getTimeFromOp,createDesc
 
+
     def getEmptyAddr(self):
-        """
-        Gets an empty register from the system.
-        :return: Returns string address of empty register.
-        """
         for i in self.addrRegs.keys():
             if i != "A0":
                 if self.addrRegs[i] is None:
@@ -116,16 +111,13 @@ class CDC6600System():
                 return i
 
     def getEmptyMem(self):
-        """
-        Returns an empty memory register.
-        :return: Empty memory register.
-        """
         for i in self.memRegs.keys():
             if i != "K0":
                 if self.memRegs[i] is None:
                     return i
 
     def checkBusy(self,funcUnit,currTime):
+
         """
         Checks if a given functional unit is busy.
         :param funcUnit: Functional unit to check.
@@ -133,6 +125,7 @@ class CDC6600System():
         :return: Bool if currTime is greater
         than the time a functional unit is busy.
         """
+
         waitVal = self.busyUntil[funcUnit]
         return (waitVal > currTime)
 
@@ -154,7 +147,8 @@ class CDC6600System():
                                       varInput=varInput)
         return instrList
 
-    def checkResourceConflict(self,instr):
+    def 
+    Conflict(self,instr):
         """
         Checks for hardware resource conflicts
         with a given instruction.
@@ -166,11 +160,9 @@ class CDC6600System():
 
         if (category == "FETCH") or (category == "STORE"):
             category = self.getAvailIncr()
-        elif ("MULTIPLY" in category):
-            category = self.getAvailMult()
-            instr.category = category
 
         if(self.busyUntil[category] > timing):
+
             instrIdx = self.instrList.index(instr)
             print("Hardware resource dependancy at "
                   "instr line %s!" % (instrIdx + 1))
@@ -228,42 +220,96 @@ class CDC6600System():
         return None
 
     def getCurrIncr(self):
-        """
-        Gets the current increment unit that is availible.
-        :return: Increment unit string.
-        """
         if self.busyUntil['INCR1'] > self.busyUntil['INCR2']:
             return 'INCR1'
         else:
             return 'INCR2'
 
     def getAvailIncr(self):
-        """
-        Returns the availible increment unit that is not busy.
-        :return:
-        """
         if self.busyUntil['INCR1'] <= self.busyUntil['INCR2']:
             return 'INCR1'
         else:
             return 'INCR2'
 
-    def getAvailMult(self):
-        """
-        Returns the avialible multiply unit that is not busy.
-        :return: Multiply unit string.
-        """
-        if self.busyUntil['MULTIPLY1'] <= self.busyUntil['MULTIPLY2']:
-            return 'MULTIPLY1'
-        else:
-            return 'MULTIPLY2'
 
+    def createDesc(self,instr):
+
+        if (instr.category == "FETCH"):
+            instr.catDesc = "Fetch"
+            instr.instrDesc = instr.catDesc + " " + instr.varName
+        elif instr.category == "STORE":
+            instr.catDesc = "Store"
+            instr.instrDesc = instr.catDesc + " " + instr.varName
+        else:
+            instr.catDesc = instr.category
+            instr.instrDesc = instr.catDesc + " " + instr.instrRegs['leftOp'] + " "+ instr.instrRegs['rightOp']
+
+
+    def getTimeFromOp(self,category):
+
+        try:
+            return self.funcUnits[category]
+        except(KeyError):
+            if (category == "FETCH") or (category == "STORE"):
+                return self.funcUnits[self.getCurrIncr()]
+            else:
+                return 0
+
+
+    def generateTimes(self,instr):
+        # TODO compute output times based on instruction category
+        # TODO Main simulation loop will go here!
+        instrIdx = self.instrList.index(instr)
+        if instrIdx == 0:
+            instr.timeDict['issueTime'] = 1
+            self.currWordTimes[instr.currWord] = 1
+        else:
+            # Check for next word
+            if self.instrList[instrIdx-1].currWord == instr.currWord:
+                prevType = self.instrList[instrIdx - 1].instrType
+                if prevType == "LONG":
+                    instr.timeDict['issueTime'] = self.longWait + self.instrList[instrIdx - 1].timeDict['issueTime']
+                else:
+                    instr.timeDict['issueTime'] = self.shortWait + self.instrList[instrIdx - 1].timeDict['issueTime']
+            else:
+                instr.timeDict['issueTime'] = self.wordWait + self.currWordTimes[self.instrList[instrIdx-1].currWord]
+                self.currWordTimes[instr.currWord] = instr.timeDict['issueTime']
+
+
+            # TODO fillout conditions
+
+        # Check for timing of start execution
+        if False: # TODO Check for data-dependant hazard
+            temp = 0
+        else:
+            # Get timing offset for managing resource conflicts
+            instr.timeDict['startTime'] = instr.timeDict['issueTime'] + \
+                                          self.checkResourceConflict(instr.category,instr.timeDict['issueTime'])
+
+        instr.timeDict['resultTime'] = instr.timeDict['startTime'] + self.getTimeFromOp(instr.category)
+        instr.timeDict['unitReadyTime'] = instr.timeDict['resultTime'] + self.unitReadyWait
+        if instr.category == "FETCH":
+            instr.timeDict['fetchTime'] = instr.timeDict['unitReadyTime'] + self.fetchStoreWait
+        elif instr.category == "STORE":
+            instr.timeDict['storeTime'] = instr.timeDict['unitReadyTime'] + self.fetchStoreWait
+
+        # Done processing instructions and generating times!
+
+
+    def cleanUpTimes(self,instr):
+        # Replace empty times with a dash for better visualization
+        for key,value in instr.timeDict.items():
+            if value == 0:
+                instr.timeDict[key] = '-'
 
     def compute(self, instr):
-        """
-        Wrapper for creating timing table with other subfunctions.
-        :param instr: Input instruction.
-        """
-        self.eqnAndRegisters(instr)
+
+        # Generate instruction equation and description
+        self.eqnAndRegisters(instr) # TODO may move to parseandstore and check for conflicts
         self.createDesc(instr)
         self.generateTimes(instr)
         self.cleanUpTimes(instr)
+
+
+
+
